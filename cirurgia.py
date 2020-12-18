@@ -47,13 +47,16 @@ class Cirurgiao:
 	def __init__ (self,id,especialidade):
 		self.id = id
 		self.e = especialidade
-		self.hdia = 24
-		self.hsemana = 100
+		self.hdia = 0
+		self.hsemana = 0
 
+	def utilizaCirurgiao(h):
+		self.hdia += h
+		self.hsemana += h
 	def novoDia():
-		self.hdia = 24
+		self.hdia = 0
 	def novaSemana():
-		self.hsemana = 100
+		self.hsemana = 0
 
 
 class Sala:
@@ -80,7 +83,7 @@ def verificaInstancia():
 
 
 
-def agenda(tempo,Cirurgias,Salas,Cirurgioes):
+def agenda(tempo,dia,semana,Cirurgias,Salas,Cirurgioes):
 	Cirurgias.sort()
 
 
@@ -91,6 +94,28 @@ def agenda(tempo,Cirurgias,Salas,Cirurgioes):
 
 		#Para cada cirurgia, tenta agendar 
 		for cirurgia in Cirurgias:
+			if(cirurgia.sala != -1):
+				continue
+
+			#Há tempo disponível para agendar essa cirurgia
+			if(tempo > Salas[s].disponivel and Salas[s].disponivel + cirurgia.tc <= 46):
+				#Verifico se o cirurgiao requerido para essa cirurgia pode faze-la
+				for cirurgiao in Cirurgioes:
+					if(cirurgiao.id == cirurgia.cirurgiao &&   cirurgiao.hdia + cirurgia.h <= 24 && cirurgiao.hsemana+ cirurgia.h <=100  ):
+						
+						#Configuro o cirurgiao
+						cirurgiao.utilizaCirurgiao(cirurgia.h)
+						
+						#Configuro a cirurgia
+						cirurgia.setCirurgiao( cirurgiao.id )
+						cirurgia.setTempo(tempoAtual, tempoAtual + cirurgia.h)
+						cirurgia.setDia(dia)
+						cirurgia.setSemana(semana)
+
+						#Utilizo a sala
+						cirurgia.setSala(s)
+						Sala[s].setHora(cirurgia.h)
+
 
 
 '''Algoritmo que agenda as cirurgias de forma gulosa, dando prioridade a algumas caracteristicas, retorna a configuração final das cirurgias agendadas
@@ -103,7 +128,7 @@ def agendaGreedy(s,Cirurgias,Salas,Cirurgioes ):
 	cirurgias_realizadas = 0
 
 	while( cirurgias_realizadas < len(Cirurgias) ):
-		agenda(tempoAtual,Cirurgias,Salas,Cirurgioes)
+		agenda(tempoAtual,dia_atual,semana_atual,Cirurgias,Salas,Cirurgioes)
 
 		tempo_atual+= 1
 
@@ -115,12 +140,6 @@ def agendaGreedy(s,Cirurgias,Salas,Cirurgioes ):
 		if(dia_atual==5):
 			dial_atual = 1
 			semana_atual += 1
-
-
-
-
-
-
 
 	return None
 '''
@@ -232,15 +251,16 @@ def main():
 	alfa = 1
 	beta = 1
 	p = 0.5
-	graph = [[0 for x in range(N)] for y in range(N)]  
+	
+	# graph = [[0 for x in range(N)] for y in range(N)]  
 	feromonio = [[1 for x in range(N)] for y in range(N)]  
 	
-	Ants = []
+	# Ants = []
 	
-	for i in range(N):
-		Ants.append( Ant(N,alfa,beta,1) )
-		#Visito a cidade inicial da formiga, escolho de forma aleatória! 
-	read_graph(N,graph)
+	# for i in range(N):
+	# 	Ants.append( Ant(N,alfa,beta,1) )
+	# 	#Visito a cidade inicial da formiga, escolho de forma aleatória! 
+	# read_graph(N,graph)
 
 	it = 0
 	best_formiga = None
