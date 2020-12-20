@@ -1,7 +1,6 @@
 import numpy as np
 import random
 
-
 '''
 -- Uma formiga deve ser capaz de iniciar a sua busca a partir de uma cidade específica
 -- Lembrar de todas as cidades visitadas

@@ -4,6 +4,100 @@ import random
 
 
 
+
+
+
+'''
+Classe State, indica um estado final da instância de agendamento
+Recebe uma lista de Cirurgias, um estado é idêntico ao outro caso as cirurgias foram agendadas
+no mesmo instante
+'''
+
+def byTC(cirurgia):
+	return cirurgia.tc
+
+class State:
+
+	# Recebe como parâmetro uma lista de cirurgias
+	def __init__ (self, Cirurgias,value  ):
+		self.Cirurgias = Cirurgias
+		#Valor da função objetivo
+		self.value = value
+	def __eq__(self, Other):
+		equal = 0
+		for cirurgia_x in Cirurgias:
+			for cirurgia_y in Other:
+				if(cirurgia_x.id == cirurgia_y.id):
+					if( !(cirurgia_x.sala == cirurgia_y.sala and cirurgia_x.dia == cirurgia_y.dia and cirurgia_x.semana == cirurgia_y.semana and cirurgia_x.tc_inicio == cirurgia_y.tc_fim and cirurgia_x.cirurgiao == cirurgia_y.cirurgiao) ):					
+						return False
+		return True
+
+	#Algoritmo noob
+	def op1(self):
+		best = {}
+
+		Cirurgias_sorted = self.Cirurgias.copy()
+		
+		#Inverto o array para procurar as menores.
+		Cirurgias_sorted.sort(key = byTC )
+
+		for cirurgia_x in self.Cirurgias:
+			if(cirurgia_x.p == 1):
+				continue
+			#Procuro algua cirurgia idêntica a minha, de mesma prioridade, mas com tempo de espera diferenciado
+			#Assim que encontra o par, procure outro par.
+			time_left = cirurgia_x
+			swap = []
+			
+			for cirurgia_y in Cirurgias_sorted:
+				if(cirurgia_y.id in id_used or cirurgia_y.id == cirurgia_x.id):
+					continue
+				if(cirurgia_x.p == cirurgia_y.o and cirurgia_x.w > cirurgia_y.w and cirurgia_x.w and cirurgia_x.e == cirurgia_y.e and time_left >= cirurgia_y.tc):
+
+					#Incluo a condição das cirurgias terem sido adicionados posteriomente
+					if(cirurgia_x.dia < cirurgia_y.dia and cirurgia_x.semana <= cirurgia_y.semana):
+
+						#Tenho que incluir o tempo 
+						if(len(swap) > 0):
+							time_left -= (cirurgia_y.tc + 2)
+						else:
+							#O primeiro a ser adicionado não precisa remover 2 unidades para limpeza da sala, pois já está incluso.
+							time_left -= (cirurgia_y.tc)
+						swap.append(cirurgia_y.id)
+
+			best[cirurgia_x.id] = swap
+
+		bigger = -1
+
+		#Procuro a melhor escolha de troca
+		for key in best.keys():
+			if(best[key] > bigger ):
+				bigger = key
+
+		idx = 0
+		for i in range(len(Cirurgias_sorted)):
+			if(cirurgia[i].id == best.keys()[0] ):
+				idx = i
+				break 
+		dia = Cirurgias_sorted[idx].dia
+		semana = Cirurgias_sorted[idx].semana
+		tc_inicio = Cirurgias_sorted[idx].tc_inicio
+		tc_fim = Cirurgias_sorted[idx].tc_inicio
+		for cirurgia in Cirurgias_sorted:
+			for cirurgia_id in best[bigger].values():
+				#Faco a substituicao das datas
+				if(cirurgia == cirurgia_id):
+					cirurgia_id.setTempo(tempo, tempo + cirurgia.tc-1)
+					cirurgia_id.setDia(dia)
+					cirurgia_id.setSemana(semana)
+
+
+		#Realizo a troca
+		return State(novaCirurgias,FO(Cirurgias_sorted))
+
+
+
+
 class Cirurgia:
 
 	def __init__(self,id,p,w,e,h,tc):
@@ -11,9 +105,13 @@ class Cirurgia:
 		self.p = p
 		self.w = w
 		self.e = e
-		self.h = h
+		self.cirurgiao = h
 		self.tc = tc
 		self.sala = -1
+		self.tc_inicio = -1
+		self.tc_fim = -1
+		self.dia = -1
+		self.semana = -1
 	#Overloading do 
 	def __gt__(self,other):
 		if(self.p < other.p):
@@ -50,71 +148,125 @@ class Cirurgiao:
 		self.hdia = 0
 		self.hsemana = 0
 
-	def utilizaCirurgiao(h):
+	def utilizaCirurgiao(self,h):
 		self.hdia += h
 		self.hsemana += h
-	def novoDia():
+	def novoDia(self):
 		self.hdia = 0
-	def novaSemana():
+		self.especialidade = -1
+	def novaSemana(self):
 		self.hsemana = 0
 
 
 class Sala:
 	def __init__(self,id):
 		self.id = id
-		self.disponivel = 0
-
+		self.disponivel = 1
+		self.especialidade = -1
 	#Esse é o tempo que vai estar disponível após a limpeza da sala. no tempo Disponível a sala estará liberada
 	#Por isso soma-se 3 unidades, h unidades do uso, + 2 unidades para limpeza, +1 para o tempo de disponibilidade
+	def setEspecialidade(self,e):
+		self.especialidade = e
 	def setHora(self, h):
 		self.disponivel = h+3
 
-	def novoDia():
-		self.disponivel = 0
+	def novoDia(self):
+		self.disponivel = 1
+		self.especialidade = -1
 
-
+penality = { 1:90, 2:20,3:5,4:1 }
 #Funcao objetivo, dado a entrada da instancia, calcula o valor atual das cirurgias e as suas respectivas datas em que foram agendadas. 
-def FO():
-	return None
+def FO(Cirurgias):
+	penalty = 0
+	for cirurgia in Cirurgias:
+		penalty += ( cirurgia.dia*cirurgia.semana)*penality[cirurgia.e] + cirurgia.w-1 # Minimo de tempo de espera é 1.
+	
+	#Inviabilizar cirurgias que não devem ser possíveis de serem realizadas, como por exemplo, mais de 1 especialidade na sala durante aquele dia
+
+	#Identificar cirurgias que foram agendadas no mesmo dia e mesma semana, e que possuem 
+	for cirurgia_x in Cirurgias:
+		for cirurgia_y in Cirurgias:
+			#Garantindo que só irá comparar uma unica vez uma cirurgia de ids diferentes.
+			if(cirurgia_x.id == cirurgia_y.id or cirurgia_x < cirurgia_y):
+				continue
+			if(cirurgia_x.dia == cirurgia_y.dia and cirurgia_x.semana == cirurgia_y.semana and cirurgia_x.e != cirurgia_y.e and cirurgia_x.sala == cirurgia_y.sala):
+				penalty +=  100000000  # Penalidade de inviabilizar
+
+	return penalty
+
+'''
+TODO
+- Verificar se os cirurgoes obedecam as constrains
+- Verificar se as salas obedecam as constrains
+'''
 
 #Funcao verifica se a instancia está dentro do Bloco do Problema. 
 def verificaInstancia():
-	return None
 
 
 
+	for cirurgia_x in Cirurgias:
+		for cirurgia_y in Cirurgias:
+			#Garantindo que só irá comparar uma unica vez uma cirurgia de ids diferentes.
+			if(cirurgia_x.id == cirurgia_y.id or cirurgia_x < cirurgia_y):
+				continue
+			if(cirurgia_x.dia == cirurgia_y.dia and cirurgia_x.semana == cirurgia_y.semana and cirurgia_x.e != cirurgia_y.e and cirurgia_x.sala == cirurgia_y.sala):
+				return False
+	return True
+
+
+#A sala tem especialidade
 def agenda(tempo,dia,semana,Cirurgias,Salas,Cirurgioes):
-	Cirurgias.sort()
-
+	Cirurgias.sort(reverse=True)
+	cnt = 0
 
 	for s in range(len(Salas)):
-		#Se a sala ja foi toda ocupada, nao adianta tentar ocupá-la
-		if(Salas[s].disponivel == 46):
-			continue
-
-		#Para cada cirurgia, tenta agendar 
-		for cirurgia in Cirurgias:
-			if(cirurgia.sala != -1):
+		for tempo in range(1,47):
+			#Se a sala ja foi toda ocupada, nao adianta tentar ocupá-la
+			if(Salas[s].disponivel == 46):
 				continue
+			if(Salas[s].disponivel > tempo ):
+				continue
+			# print(Salas[s].disponivel, tempo)
+			#Para cada cirurgia, tenta agendar 
+			for cirurgia in Cirurgias:
+				if(cirurgia.sala != -1 ):
+					continue
+				#Se sou uma cirurgia que posso ser agendada nessa sala, mas nao posso ser agendada no momento, aguardo para poder sera Agendada nessa sala
+				if(Salas[s].especialidade == cirurgia.e and Salas[s].disponivel + cirurgia.tc -1 <= 46 and Salas[s].disponivel > tempo  ):
+					continue
 
-			#Há tempo disponível para agendar essa cirurgia
-			if(tempo > Salas[s].disponivel and Salas[s].disponivel + cirurgia.tc <= 46):
-				#Verifico se o cirurgiao requerido para essa cirurgia pode faze-la
-				for cirurgiao in Cirurgioes:
-					if(cirurgiao.id == cirurgia.cirurgiao &&   cirurgiao.hdia + cirurgia.h <= 24 && cirurgiao.hsemana+ cirurgia.h <=100  ):
-						
-						#Configuro o cirurgiao
-						cirurgiao.utilizaCirurgiao(cirurgia.h)
-						
-						#Configuro a cirurgia
-						cirurgia.setCirurgiao( cirurgiao.id )
-						cirurgia.setTempo(tempoAtual, tempoAtual + cirurgia.h)
-						cirurgia.setDia(dia)
-						cirurgia.setSemana(semana)
+				#Há tempo disponível para agendar essa cirurgia
+				# print(tempo,Salas[s].disponivel, Salas[s].disponivel + cirurgia.tc)
+				if( (Salas[s].especialidade == -1 or Salas[s].especialidade == cirurgia.e) and tempo == Salas[s].disponivel and tempo + cirurgia.tc-1 <= 46):
+					#Verifico se o cirurgiao requerido para essa cirurgia pode faze-la
+					for cirurgiao in Cirurgioes:
+						if (cirurgiao.id == cirurgia.cirurgiao and   cirurgiao.hdia + cirurgia.tc <= 24 and cirurgiao.hsemana + cirurgia.tc <=100  ):					
+							#Configuro o cirurgiao
+							cirurgiao.utilizaCirurgiao(cirurgia.cirurgiao)
+							
+							#Configuro a cirurgia
+							cirurgia.setCirurgiao( cirurgiao.id )
+							cirurgia.setTempo(tempo, tempo + cirurgia.tc-1)
+							cirurgia.setDia(dia)
+							cirurgia.setSemana(semana)
 
-						#Utilizo a sala
-						cirurgia.setSala(s)
-						Sala[s].setHora(cirurgia.h)
+							#Utilizo a sala
+							Salas[s].setEspecialidade(cirurgia.e)
+							cirurgia.setSala(s)
+							Salas[s].setHora(cirurgia.tc-1 + tempo)
+							cnt += 1
+	return cnt
+
+def zeraDisponibilidade(tipo,Salas,Cirurgioes):
+	for sala in Salas:
+		sala.novoDia()
+	if(tipo == "dia"):
+		for cirurgiao in Cirurgioes:
+			cirurgiao.novoDia()
+	else:
+		for cirurgiao in Cirurgioes:
+			cirurgiao.novaSemana()
 
 
 
@@ -128,16 +280,17 @@ def agendaGreedy(s,Cirurgias,Salas,Cirurgioes ):
 	cirurgias_realizadas = 0
 
 	while( cirurgias_realizadas < len(Cirurgias) ):
-		agenda(tempoAtual,dia_atual,semana_atual,Cirurgias,Salas,Cirurgioes)
+		cirurgias_realizadas += agenda(tempo_atual,dia_atual,semana_atual,Cirurgias,Salas,Cirurgioes)
 
-		tempo_atual+= 1
+		tempo_atual = 46
 
 		#Acabou 
 		if(tempo_atual == 46):
-			zeraDisponibilidade()
+			zeraDisponibilidade("dia", Salas,Cirurgioes)
 			tempo_atual = 1
 			dia_atual += 1
 		if(dia_atual==5):
+			zeraDisponibilidade("semana", Salas,Cirurgioes)
 			dial_atual = 1
 			semana_atual += 1
 
@@ -229,85 +382,139 @@ def evaporaFeromonio(feromonio,p,N):
 			feromonio[i][j] = feromonio[i][j]*(1-p)
 
 
+'''
+TODO:
+1- Criar a leitura das instancias do problema - 30 Min                            > Ok
+2- Verificar se a função gulosa está realizando o agendamento corretamente        > Ok
+3- Criar a função que verifica se as cirurgias foram agendadas corretamente       > sem prioridade
+4- Criar a função objetivo														  > running
+5- Ajustar as formigas para fazerem a alteração do problema
+6- 
+'''
 
-def read_graph(N,graph):
+def read_instances(Cirurgias,Salas,Cirurgioes):
+	x = input()
+	n = int(x.split(" ")[0])
+	s = int(x.split(" ")[1])
+
+	for sala in range(s):
+		Salas.append( Sala( (sala) )  )
+
+	unique_id_cir = {}
+	for i in range(n):
+		cir = input()
+		print(cir)
+		c = cir.split(" ")
+		Cirurgias.append(  Cirurgia(int(c[0]),int(c[1]),int(c[2]),int(c[3]),int(c[4]),int(c[5] ))  )
+		unique_id_cir[ int(c[4]) ] = int( c[3] )
 	
-	for i in range(N):
-		x = input().split(" ")
-		for j in range(N):
-			graph[i][j] = float(x[j])
+	for key in unique_id_cir.keys():
+		Cirurgioes.append( Cirurgiao( key,unique_id_cir[key]  ) )
 
 
 
+def printSolution(Cirurgias):
+	print("Solucao encontrada: ")
+	for cirurgia in Cirurgias:
+		print("Id: ", cirurgia.id, " Prioridade: ", cirurgia.p , " Especialidade: ",cirurgia.e ,  " sala: " , cirurgia.sala, " dia: ", cirurgia.dia, " semana "  ,cirurgia.semana, " Inicio ", cirurgia.tc_inicio, " Fim ", cirurgia.tc_fim )
 
+
+
+def checkConstrains(Cirurgias,Salas,Cirurgioes):
+	#Verifica se não extrapola a quantidade de tempo
+	return ''
+
+
+def check(Cirurgias,Salas,Cirurgioes):
+
+	print("Informacoes das Salas: ")
+	for sala in Salas:
+		print("Sala id: ", sala.id, " Disponivel: ", sala.disponivel)
+	print("Informacoes das Cirurgias: ")
+	for cirurgia in Cirurgias:
+		print("Id: ", cirurgia.id, " Prioridade: ", cirurgia.p, " Tempo de Espera: ", cirurgia.w, 
+			" Especialidade: ", cirurgia.e, " Cirurgiao: ", cirurgia.cirurgiao, " Duração: ", cirurgia.tc, " Sala: ", cirurgia.sala)
+
+	print("Informacoes dos Cirurgioes: ")
+	for cirurgiao in Cirurgioes:
+		print("Cirurgiao id: " ,cirurgiao.id, " Cirurgiao especialidade: ", cirurgiao.e, " Hdia: ", cirurgiao.hdia, " hSemana ", cirurgiao.hsemana)
 
 
 def main():
-	best_rota = []
-	best_value = 10000000000
+	Cirurgias = []
+	Salas = []
+	Cirurgioes = []
+	read_instances(Cirurgias,Salas,Cirurgioes)
+	check(Cirurgias,Salas,Cirurgioes)
+	agendaGreedy(len(Salas),Cirurgias,Salas,Cirurgioes )
+	checkConstrains(Cirurgias, Salas, Cirurgioes)
+	printSolution(Cirurgias)
+	print("Funcao Objetivo: ", FO(Cirurgias))
+	# best_rota = []
+	# best_value = 10000000000
 
-	max_iter = 100
-	N = 5
-	alfa = 1
-	beta = 1
-	p = 0.5
+	# max_iter = 100
+	# N = 5
+	# alfa = 1
+	# beta = 1
+	# p = 0.5
 	
-	# graph = [[0 for x in range(N)] for y in range(N)]  
-	feromonio = [[1 for x in range(N)] for y in range(N)]  
+	# # graph = [[0 for x in range(N)] for y in range(N)]  
+	# feromonio = [[1 for x in range(N)] for y in range(N)]  
 	
-	# Ants = []
+	# # Ants = []
 	
-	# for i in range(N):
-	# 	Ants.append( Ant(N,alfa,beta,1) )
-	# 	#Visito a cidade inicial da formiga, escolho de forma aleatória! 
-	# read_graph(N,graph)
+	# # for i in range(N):
+	# # 	Ants.append( Ant(N,alfa,beta,1) )
+	# # 	#Visito a cidade inicial da formiga, escolho de forma aleatória! 
+	# # read_graph(N,graph)
 
-	it = 0
-	best_formiga = None
-	while(it != max_iter):
-		for ant in Ants:
-			# print("Inicio da formiga")
-			ant.clear()
-			# print(ant.visited)
-			#Para cada inicio, coloca uma formiga em uma cidade aleatória diferente.
-			ant.visitCity(random.randint(0,N-1))
+	# it = 0
+	# best_formiga = None
+	# while(it != max_iter):
+	# 	for ant in Ants:
+	# 		# print("Inicio da formiga")
+	# 		ant.clear()
+	# 		# print(ant.visited)
+	# 		#Para cada inicio, coloca uma formiga em uma cidade aleatória diferente.
+	# 		ant.visitCity(random.randint(0,N-1))
 
-			visited_cnt = 1 # a cidade inicial já foi visitada.
-			#Enquanto não visitou todos os vértices, continua visitando:
-			while(visited_cnt != N):
-				#Coleto onde a formiga K está
-				v = ant.visited[-1]
-				# print(" Está no vértice: ", v)
-				#Escolho aleatoriamente a qual vértice ir a partir da probabilidade da formiga K
-				#É um vetor de probabilidades 0-N-1, que indica a probabilidade de escolher
-				prob = ant.probability[v]
+	# 		visited_cnt = 1 # a cidade inicial já foi visitada.
+	# 		#Enquanto não visitou todos os vértices, continua visitando:
+	# 		while(visited_cnt != N):
+	# 			#Coleto onde a formiga K está
+	# 			v = ant.visited[-1]
+	# 			# print(" Está no vértice: ", v)
+	# 			#Escolho aleatoriamente a qual vértice ir a partir da probabilidade da formiga K
+	# 			#É um vetor de probabilidades 0-N-1, que indica a probabilidade de escolher
+	# 			prob = ant.probability[v]
 
-				#Comeco no 
-				next_v = v
-				while( v == next_v ):
-					x = np.random.choice(N,1, p = prob)
-					x = x[0] 
-					# print(" Tentou ir do vertice: {} para o vértice {}".format(v,x))
-					if( ant.isVisited(x) == False ):
-						next_v = x
-						visited_cnt += 1
+	# 			#Comeco no 
+	# 			next_v = v
+	# 			while( v == next_v ):
+	# 				x = np.random.choice(N,1, p = prob)
+	# 				x = x[0] 
+	# 				# print(" Tentou ir do vertice: {} para o vértice {}".format(v,x))
+	# 				if( ant.isVisited(x) == False ):
+	# 					next_v = x
+	# 					visited_cnt += 1
 				
-				#Visito a cidade a partir daquela formiga
-				ant.visitCity(next_v)
+	# 			#Visito a cidade a partir daquela formiga
+	# 			ant.visitCity(next_v)
 
-			ant.depositaFeromonio(feromonio,graph)
-			#Verifica se a rota utilizada pela formiga foi a melhor até o momento
-			# print(ant.visited)
-			value = ant.tamanhoCaminho(graph)
-			print(value)
-			if(value < best_value):
-				best_value = value
-				best_rota = ant.visited
-			# print("Fim da formiga")
-		evaporaFeromonio(feromonio,p,N)
+	# 		ant.depositaFeromonio(feromonio,graph)
+	# 		#Verifica se a rota utilizada pela formiga foi a melhor até o momento
+	# 		# print(ant.visited)
+	# 		value = ant.tamanhoCaminho(graph)
+	# 		print(value)
+	# 		if(value < best_value):
+	# 			best_value = value
+	# 			best_rota = ant.visited
+	# 		# print("Fim da formiga")
+	# 	evaporaFeromonio(feromonio,p,N)
 		
 
-		it += 1
+	# 	it += 1
 
 
 main()
