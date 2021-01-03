@@ -8,7 +8,6 @@ import random
 '''
 class Ant:
 	# Vai armazenar os vértices já visitados
-	
 	def __init__(self,N,a,b,q):
 		#quantidade de vértices no grafo
 		self.alfa = a
