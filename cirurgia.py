@@ -1,43 +1,12 @@
 import numpy as np
 import random
+import copy
+#Variáveis globais
+Ants = []
+Cirurgias = []
+Salas = []
+Cirurgioes = []
 
-
-
-'''
-A classe Graph, vai armazenar uma lista de nós e arestas.
-Realizará o mapeamento das instâncias State para indices.
-E irá mapear as Arestas em indices também. 
-'''
-
-#Grafo é direcionado
-# class Graph:
-# 	def __init__ (self):
-# 		self.nodes = {}
-# 		self.revNodes = {}
-# 		self.edges = {}
-# 		self.revEdges = {}
-# 		self.nidx = 0
-# 		self.eidx = 0
-
-# 	def add_Node(self,s):
-# 		if s not in self.nodes.keys():
-# 			self.nodes[ s ] = self.nidx
-# 			self.revNodes[self.nidx] = s
-# 			self.nidx = self.nidx + 1 
-
-# 	#Sao indices, em que as operacoes tambem sao mapeados por indices
-# 	def add_Edge(self,s1,op,s2):
-# 		e = (s1,op,s2)
-# 		if( e not in self.edges.keys()  ):
-# 			self.edges[ e ] = self.eidx
-# 			self.revEdges[self.eidx] = e
-# 			self.eidx = self.eidx + 1
-
-# 	def get_Node(self,idx):
-# 		return self.revNodes[idx]
-	
-# 	def get_Edge(self,idx):
-# 		return self.revEdges[idx]
 
 '''
 Classe State, indica um estado final da instância de agendamento
@@ -66,8 +35,8 @@ class Graph:
 			self.nidx = self.nidx + 1 
 
 	#Sao indices, em que as operacoes tambem sao mapeados por indices
-	def addEdge(self,s1,op,s2):
-		e = (s1,op,s2)
+	def addEdge(self,s1,op,s2,id):
+		e = (s1,op,s2,id)
 		if( e not in self.edges.keys()  ):
 			self.edges[ e ] = self.eidx
 			self.revEdges[self.eidx] = e
@@ -99,9 +68,16 @@ class Graph:
 
 class State:
 	# Recebe como parâmetro uma lista de cirurgias
+	id_agendadas = []
+	n_agendadas = []
 	def __init__ (self, Cirurgias,value  ):
 		
-		self.Cirurgias = Cirurgias.copy()
+		self.Cirurgias = copy.deepcopy(Cirurgias)
+		for cirurgia in Cirurgias:
+			if(cirurgia.dia != -1):
+				self.id_agendadas.append(cirurgia.id)
+			else:
+				self.n_agendadas.append(cirurgia.id)
 		#Valor da função objetivo
 		self.value = value
 
@@ -116,7 +92,8 @@ class State:
 			for cirurgia_y in Other.Cirurgias:
 				
 				if(cirurgia_x.id == cirurgia_y.id):
-					print("> ",cirurgia_x.dia,cirurgia_y.dia)
+					print("cirurgia_x_id: {} agendada no dia {} ".format(cirurgia_x.id,cirurgia_x.dia))
+					print("cirurgia_y_id: {} agendada no dia {} ".format(cirurgia_y.id,cirurgia_y.dia))
 					if( 
 						( cirurgia_x.sala != cirurgia_y.sala 
 						or cirurgia_x.dia != cirurgia_y.dia 
@@ -134,96 +111,105 @@ class State:
 		elif(op==1):
 			return self.op2()
 		elif(op==2):
-			return self.op3()
+			return self.op2()
 
-	#Escolhe uma cirurgia de prioridade diferente e adiciona em um outro dia
+	#Esta operacao remove uma cirurgia agendada aleatoriamente, de acordo com a probabilidade de prioridade
+	#Prioridades 1 tem baixa probalidade de ser excluída
+	#
+	def op2(self):
+		#Seleciona a cirurgia a ser removida
+		New_Cirurgias = copy.deepcopy(self.Cirurgias)
 
+		id_ = random.choice(self.id_agendadas)
+		print("Cirurgia id: {} desagendada".format(id_))
+		for cirurgia in New_Cirurgias:
+			#Desagenda a cirurgia.
+			if(cirurgia.id == id_ ):
+				cirurgia.remove()
+				break
+		
+		return State(New_Cirurgias,FO(New_Cirurgias)),id_
 
-
-
-	#Algoritmo noob
+	#Adiciona uma cirurgia aleatória
+	#Começa com um 
 	def op1(self):
-		best = {}
-		Cirurgias_sorted = self.Cirurgias.copy()
+		#Procura os tempos em que as cirurgias podem ser adicionadas
 		
-		#Inverto o array para procurar as menores.
-		Cirurgias_sorted.sort(key = byTC )
+		tempos_d = {}
+		dia = 1
+		tc = 1
+		qt_f = 1
 
-		for cirurgia_x in self.Cirurgias:
-			if(cirurgia_x.p == 1):
-				continue
-			#Procuro algua cirurgia idêntica a minha, de mesma prioridade, mas com tempo de espera diferenciado
-			#Assim que encontra o par, procure chooseOP
+		while(dia <= 5):
+			while(tc <= 46):
+				for sala in Salas:
+					found = False
+					for cirurgia in self.Cirurgias:
+						#é levado em consideração a limpeza da sala.
+						#Se a cirurgia finaizou 2 tcs atrás, esse tc não é disponível, pois é da limpeza
+						if(cirurgia.dia == dia and (cirurgia.tc_inicio == tc or cirurgia.tc_fim-2 == tc ) and cirurgia.sala == sala.id):
+							found = True
+							break
 
-			time_left = cirurgia_x.tc
-			swap = []
-			
-			for cirurgia_y in Cirurgias_sorted:
-				# #Procuro apenas salas que não foram agendadas
-				# if(cirurgia_y.dia !=  -1 ):
-				# 	continue
-				if( cirurgia_y.id == cirurgia_x.id):
-					continue
-				# if(cirurgia_x.p == cirurgia_y.p and cirurgia_x.w > cirurgia_y.w and cirurgia_x.w and cirurgia_x.e == cirurgia_y.e and time_left >= cirurgia_y.tc):
-				#Teste
-				if( cirurgia_x.w > cirurgia_y.w and cirurgia_x.w and cirurgia_x.e == cirurgia_y.e and time_left >= cirurgia_y.tc):
-					# print("Id: ",cirurgia_x.id, " Dia: ",cirurgia_x.dia, " TC ",type(cirurgia_x.tc))
-					# print("Id: ",cirurgia_y.id, " Dia: ",cirurgia_y.dia, " TC ",type(cirurgia_y.tc))
-					
-					#Incluo a condição das cirurgias terem sido adicionados posteriomente
-					if(cirurgia_x.dia <= cirurgia_y.dia):
-
-						#Tenho que incluir o tempo 
-						if(len(swap) > 0):
-							time_left -= (cirurgia_y.tc + 2)
-						else:
-							#O primeiro a ser adicionado não precisa remover 2 unidades para limpeza da sala, pois já está incluso.
-							time_left -= (cirurgia_y.tc)
-						swap.append(cirurgia_y.id)
-
-			best[cirurgia_x.id] = swap
+					#caso não tenha encontrado ninguém nessa situação, é possível agendar alguem nesse tempo
+					#procura o proximo tempo fim.
+					if(found == False):
+						tc_fim = tc + 1
+						while(tc_fim <= 46):
+							found_end = False
+							for cirurgia in self.Cirurgias:
+								if(cirurgia.dia == dia and cirurgia.tc_inicio == tc_fim and cirurgia.sala == sala.id):
+									found_end = True
+									break
+							if(found_end):
+								break
+							tc_fim += 1
+						#Tempo anterior que é o correto
+						tc_fim -= 1
+						# #Contabiliza o tempo junto com a limepza, caso for a ultima cirurgia, deixa ela sem a limpeza
+						# if(tc == 44 and tc_fim == 46 ):
+						if(tc_fim != 46):
+							tc_fim -= 2
+						value = tc_fim - tc +1
+						if(value > 0):
+							tempos_d[ (value,qt_f) ] = ( dia, sala.id, tc )
+							qt_f += 1
+				tc+=1
+			dia += 1
 		
-		bigger = -1
-
-		#Procuro a melhor escolha de troca
-		for key in best.keys():
-			try:
-				# print(key,best[key])	
-				if(best[key][0] > bigger ):
-					bigger = key
-			except:
-				pass
-		idx = 0
-		
-
-		dia = Cirurgias_sorted[idx].dia
-		semana = Cirurgias_sorted[idx].semana
-		tc_inicio = Cirurgias_sorted[idx].tc_inicio
-		tc_fim = Cirurgias_sorted[idx].tc_fim
-		for cirurgia in Cirurgias_sorted:
-			for cirurgia_id in best[bigger]:
-				# print(cirurgia_id)
-				#Faco a substituicao das datas
-				if(cirurgia == cirurgia_id):
-					cirurgia_id.dia = dia
-					cirurgia_id.semana = semana
-					cirurgia_id.tc_inicio = tc_inicio 
-					cirurgia_id.tc_fim    = tc_inicio + cirurgia_id.tc -1
-
-					tc_inicio = cirurgia_id.tc_fim + 3
-		
-		#Coloco a cirurgia agendada para o grupo de não agendada
-		Cirurgias_sorted[idx].dia = -1
-		Cirurgias_sorted[idx].semana = -1
-		Cirurgias_sorted[idx].tc_inicio = -1
-		Cirurgias_sorted[idx].tc_fim = -1
-		#Preciso agora achar um espaco para colocar a cirurgia.
-
-		#Realizo a troca
-		
-		return State(Cirurgias_sorted,FO(Cirurgias_sorted))
+		#Após ter todos os tempos disponveis, verificamos quais cirurgias podem ser agendadas
+		#A restrição do problema para cirurgias que não possam ser agendadas, será penalizada na funcao FO.
+		#A adição é feita no tempo correto, no entanto, para verificar se a sala/cirurgiao possam ser utilizados, será verificado em um próximo momento
+		#Procuro as cirurgias que possam ser agendadas com o tempo
+		print(tempos_d)
+		pos_cirurgia = []
+		for wc,_id in tempos_d.keys():
+			for cirurgia in self.Cirurgias:
+				#Se a cirurgia não está agendada
+				if(cirurgia.dia == -1):
+					#Se o tempo para a conclusão daquela cirurgia for menor ou igual ao tempo disponível. Selecione
+					if(cirurgia.tc <= wc):
+						pos_cirurgia.append(cirurgia.id)
 
 
+		#Coleto cirurgias randômicas
+		try:
+			select_id = random.choice(pos_cirurgia)
+		except:
+			select_id = -1
+		#Crio um novo estado para a cirurgia
+		New_Cirurgias = copy.deepcopy(self.Cirurgias)
+
+		#Adiciono a cirurgia no dia X,no tempo Y, com inicio TC
+		for cirurgia in New_Cirurgias:
+			if(cirurgia.id == select_id):
+				for wc,_id in tempos_d.keys():
+					if(cirurgia.tc <= wc):
+						d,s,w = tempos_d[ (wc,_id) ]
+						cirurgia.add( d,s,w  )
+
+		print("Agendamento da cirurgia: {}".format(select_id))
+		return State(New_Cirurgias, FO(New_Cirurgias) ),select_id
 class Cirurgia:
 
 	def __init__(self,id,p,w,e,h,tc):
@@ -249,6 +235,21 @@ class Cirurgia:
 				return True
 		return False
 
+	def add(self,dia,sala,inicio):
+		self.dia = dia
+		self.sala = sala
+		self.inicio = inicio
+		self.fim = inicio+self.tc -1
+		
+	def remove(self):
+		# print("Removido cirurgia_{}".format(self.id))
+		self.dia = -1
+		self.sala = -1
+		self.cirurgiao = -1
+		self.tc_inicio = -1
+		self.tc_fim = -1
+		self.semana = -1
+		
 
 	def setSala(self, s):
 		self.sala = s
@@ -300,16 +301,32 @@ class Sala:
 		self.disponivel = 1
 		self.especialidade = -1
 
-penality = { 1:90, 2:20,3:5,4:1 }
+lp = { 1:1, 2:5,3:10,4:50 }
+fp = { 1:90 , 2:20, 3:5, 4:1 }
 #Funcao objetivo, dado a entrada da instancia, calcula o valor atual das cirurgias e as suas respectivas datas em que foram agendadas. 
 def FO(Cirurgias):
 	penalty = 0
 	for cirurgia in Cirurgias:
-		#Cirurgias que não foram marcadas
+		vc = 0
+		xcstd = 0
+		zc = 0
+		p1 = 0
 		if(cirurgia.dia == -1):
-			penalty += (cirurgia.dia)*penality[cirurgia.e] + cirurgia.w # Minimo de tempo de espera é 1.
+			zc = 1
 		else:
-			penalty += cirurgia.dia + cirurgia.w
+			xcstd = 1
+
+		if(cirurgia.dia + cirurgia.w >= lp[ cirurgia.p ]):
+			vc = 1
+
+		if(cirurgia.p == 1 and cirurgia.dia > 1):
+			p1 = 1
+
+		penalty += 10*( pow(cirurgia.w +2, cirurgia.dia) )*p1
+
+		if(cirurgia.dia != -1):
+			penalty += ( pow(cirurgia.w +2 + cirurgia.dia, 2) + pow( cirurgia.w + 2 + cirurgia.dia - lp[cirurgia.dia],2 )*vc ) * xcstd
+			penalty += ( pow( cirurgia.w + 7 ,2)*fp[cirurgia.p] +  fp[cirurgia.p]*vc*( pow(cirurgia.w +9 - lp[cirurgia.p],2) )) * zc
 
 	return penalty
 
@@ -456,7 +473,7 @@ class Ant:
 
 
 	def heuristica(self,vi,vj):
-		#Heuristica será o Delta: (Quanto se ganha ao utilizar a aresta,  FO(cnj1) - FO(cnj2)  )
+		#Heuristica será o Delta: (Quanto se ganha ao utilizar a aresta,   FO(cnj2) - FO(cnj1)
 		return vj.value - vi.value
 
 
@@ -472,16 +489,18 @@ class Ant:
 		print(self.at)
 		v = G.getNode(self.at)
 
+
+		#Gera a vizinhança do Estado Atual
 		#Crio os estados não visitados ainda.	
 		vizinhos = []
 		for op in range(self.op):
-			vizinho = v.chooseOP(op)
+			vizinho,_id = v.chooseOP(op)
 			G.addNode(vizinho)
-			G.addEdge( G.getNode(self.at),op,vizinho )
+			G.addEdge( G.getNode(self.at),op,vizinho,_id )
 			#Se o vértice já foi visitado continua
 			if( G.nodes[vizinho] in self.visited):
 				continue
-			vizinhos.append( (vizinho,op) )
+			vizinhos.append( (vizinho,op,_id) )
 
 		
 			valor_heuristica = self.heuristica(v,vizinho)
@@ -492,16 +511,17 @@ class Ant:
 			
 			s += self.probability[ self.at ][ G.nodes[vizinho] ][op]
 
-		print("Valor de s ",s)
 		#Atualizo a probabilidade de todo mundo viável
-		for vizinho,op in vizinhos:
+		for vizinho,op,id_ in vizinhos:
 			self.probability[ self.at] [G.nodes[vizinho] ][op] =self.probability[ self.at ][ G.nodes[vizinho]][op]/s
 
-	def depositaFeromonio(self,feromonio):
+	def depositaFeromonio(self,feromonio,graph):
 		lenght = self.tamanhoCaminho()
 
 		for edge in self.edges:
-			feromonio[ edge[0]  ][ edge[2] ][ edge[1] ] = self.Q/(lenght*1.0) #Adiciono feromonio no caminho feromonio[i][j][op]
+			
+			e = graph.getEdge(edge)
+			feromonio[ graph.nodes[e[0]]  ][ graph.nodes[e[2]] ][ e[1] ] = self.Q/(lenght*1.0) #Adiciono feromonio no caminho feromonio[i][j][op]
 
 def evaporaFeromonio(feromonio,p,N,op):
 	for i in range(N):
@@ -594,16 +614,13 @@ TODO:
 
 
 def main():
-	Ants = []
-	Cirurgias = []
-	Salas = []
-	Cirurgioes = []
+	
 	read_instances(Cirurgias,Salas,Cirurgioes)
 	check(Cirurgias,Salas,Cirurgioes) 
 	agendaGreedy(len(Salas),Cirurgias,Salas,Cirurgioes )
 	checkConstrains(Cirurgias, Salas, Cirurgioes)
 	printSolution(Cirurgias)
-	# print("Funcao Objetivo: ", FO(Cirurgias))
+	print("Funcao Objetivo: ", FO(Cirurgias))
 	
 	'''
 		Inicio da Heurística
@@ -620,14 +637,14 @@ def main():
 	best_rota = []
 	best_value = 10000000000
 
-	max_iter = 100
+	max_iter = 1
 	N = 100
 	alfa = 1
 	beta = 1
 	p = 0.5
 	
 	# graph = [[0 for x in range(N)] for y in range(N)]  
-	feromonio = [[[1 for k in range(1)] for j in range(N)] for i in range(N)] # Feromonio[i][j][op]
+	feromonio = [[[1 for k in range(10)] for j in range(N)] for i in range(N)] # Feromonio[i][j][op]
 	
 	
 	it = 0
@@ -637,11 +654,12 @@ def main():
 
 
 	for i in range(n_formigas):
-		Ants.append( Ant(N,1,alfa,beta,1) )
-
+		Ants.append( Ant(N,2,alfa,beta,1) )
+	f = 0
 	while(it != max_iter):
 		for ant in Ants:
-			print("Inicio da formiga")
+			print("Inicio da formiga id {}".format(f%n_formigas))
+			f += 1
 			ant.clear()
 			
 			#Para cada inicio, coloca uma formiga em uma cidade aleatória diferente.
@@ -666,30 +684,33 @@ def main():
 
 				print("Aplicando a operacao")
 				for op in range(ant.op):
-					vizinho = v.chooseOP(op)
-					if(vizinho == v):
-						print("Vizinho igual ao vértice atual")
-						continue
-					print(vizinho.value)
+					print(op)
+					vizinho,_id = v.chooseOP(op)
+					print("Vizinho de valor: {}".format(vizinho.value))
+					# if(vizinho == v):
+					# 	print("Vizinho igual ao vértice atual")
+					# 	continue
+					# print(vizinhançanho.value)
 					G.addNode(vizinho) #Adiciono o nó ao grafo
-					G.addEdge( v,op,vizinho   ) #Adiciono a vizinhança ao grafo
+					G.addEdge( v,op,vizinho, _id  ) #Adiciono a vizinhança ao grafo
 
-					Ni.append( G.edges[ (v,op,vizinho) ] )
+					Ni.append( G.edges[ (v,op,vizinho,_id) ] )
 
 					#A probabilidade de se seguir por aquele vertice, sera dada pelo vetor de probabilidades inicial, onde todos os vertices sao equiprovaveis
 					prob_Ni.append( ant.probability[ G.nodes[v] ][ G.nodes[ vizinho ] ][op] )
 
 				if(len(Ni) == 0):
 					break
+
 				idx = np.random.choice(len(Ni),1, p = prob_Ni)[0] #Escolho qual aresta seguir.
 				
 				
-				estado_escolhido = G.getEdge(Ni[idx])[2] #Escolho o estado a ser utilizado
+				estado_escolhido = G.getEdge( Ni[idx] )[2] #Escolho o estado a ser utilizado
 
 				print(" Tentou ir do vertice: {} com a operacao: {} para o vértice {}".format(v.value, G.getEdge(Ni[idx])[1] ,estado_escolhido.value ))
 				
 				if( ant.isVisited( G.nodes[estado_escolhido] ) == False ):
-					print("Visistou o vértice ")
+					print("Visistou o vértice com valor {}".format(estado_escolhido.value))
 					next_v = estado_escolhido
 					visited_cnt += 1
 			
@@ -699,7 +720,7 @@ def main():
 				ant.addEdge(Ni[idx])
 
 
-			ant.depositaFeromonio(feromonio)
+			ant.depositaFeromonio(feromonio,G)
 			#Verifica se a rota utilizada pela formiga foi a melhor até o momento
 			# print(ant.visited)
 			
