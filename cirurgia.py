@@ -35,8 +35,8 @@ class Graph:
 			self.nidx = self.nidx + 1 
 
 	#Sao indices, em que as operacoes tambem sao mapeados por indices
-	def addEdge(self,s1,op,s2,id):
-		e = (s1,op,s2,id)
+	def addEdge(self,s1,op,s2):
+		e = (s1,op,s2)
 		if( e not in self.edges.keys()  ):
 			self.edges[ e ] = self.eidx
 			self.revEdges[self.eidx] = e
@@ -92,8 +92,8 @@ class State:
 			for cirurgia_y in Other.Cirurgias:
 				
 				if(cirurgia_x.id == cirurgia_y.id):
-					print("cirurgia_x_id: {} agendada no dia {} ".format(cirurgia_x.id,cirurgia_x.dia))
-					print("cirurgia_y_id: {} agendada no dia {} ".format(cirurgia_y.id,cirurgia_y.dia))
+					# print("cirurgia_x_id: {} agendada no dia {} ".format(cirurgia_x.id,cirurgia_x.dia))
+					# print("cirurgia_y_id: {} agendada no dia {} ".format(cirurgia_y.id,cirurgia_y.dia))
 					if( 
 						( cirurgia_x.sala != cirurgia_y.sala 
 						or cirurgia_x.dia != cirurgia_y.dia 
@@ -113,6 +113,7 @@ class State:
 		elif(op==2):
 			return self.op2()
 
+	# E1 < Remove > Ex 
 	#Esta operacao remove uma cirurgia agendada aleatoriamente, de acordo com a probabilidade de prioridade
 	#Prioridades 1 tem baixa probalidade de ser excluída
 	#
@@ -181,7 +182,7 @@ class State:
 		#A restrição do problema para cirurgias que não possam ser agendadas, será penalizada na funcao FO.
 		#A adição é feita no tempo correto, no entanto, para verificar se a sala/cirurgiao possam ser utilizados, será verificado em um próximo momento
 		#Procuro as cirurgias que possam ser agendadas com o tempo
-		print(tempos_d)
+		# print(tempos_d)
 		pos_cirurgia = []
 		for wc,_id in tempos_d.keys():
 			for cirurgia in self.Cirurgias:
@@ -208,7 +209,7 @@ class State:
 						d,s,w = tempos_d[ (wc,_id) ]
 						cirurgia.add( d,s,w  )
 
-		print("Agendamento da cirurgia: {}".format(select_id))
+		# print("Agendamento da cirurgia: {}".format(select_id))
 		return State(New_Cirurgias, FO(New_Cirurgias) ),select_id
 class Cirurgia:
 
@@ -301,11 +302,17 @@ class Sala:
 		self.disponivel = 1
 		self.especialidade = -1
 
-lp = { 1:1, 2:5,3:10,4:50 }
+lp = { 1:3, 2:15,3:60,4:365 }
 fp = { 1:90 , 2:20, 3:5, 4:1 }
-#Funcao objetivo, dado a entrada da instancia, calcula o valor atual das cirurgias e as suas respectivas datas em que foram agendadas. 
+
+
+#Necessário checar se essa FO está CORRETA ! (Toy2 está com uma solução diferente Para 2 salas. Checar se a solução está CORRETA)
 def FO(Cirurgias):
+	
 	penalty = 0
+	#Dar penalidade para instancias com restrições falhadas diferentemente?
+	if(verificaInstancia(Cirurgias) == False):
+		penalty += pow(10,9)+1
 	for cirurgia in Cirurgias:
 		vc = 0
 		xcstd = 0
@@ -316,7 +323,7 @@ def FO(Cirurgias):
 		else:
 			xcstd = 1
 
-		if(cirurgia.dia + cirurgia.w >= lp[ cirurgia.p ]):
+		if(cirurgia.dia + cirurgia.w > lp[ cirurgia.p ]):
 			vc = 1
 
 		if(cirurgia.p == 1 and cirurgia.dia > 1):
@@ -326,6 +333,7 @@ def FO(Cirurgias):
 
 		if(cirurgia.dia != -1):
 			penalty += ( pow(cirurgia.w +2 + cirurgia.dia, 2) + pow( cirurgia.w + 2 + cirurgia.dia - lp[cirurgia.dia],2 )*vc ) * xcstd
+		else:
 			penalty += ( pow( cirurgia.w + 7 ,2)*fp[cirurgia.p] +  fp[cirurgia.p]*vc*( pow(cirurgia.w +9 - lp[cirurgia.p],2) )) * zc
 
 	return penalty
@@ -337,18 +345,53 @@ TODO
 '''
 
 #Funcao verifica se a instancia está dentro do Bloco do Problema. 
-def verificaInstancia():
+def verificaInstancia(Cirurgias):
 
-	for cirurgia_x in Cirurgias:
-		for cirurgia_y in Cirurgias:
-			#Garantindo que só irá comparar uma unica vez uma cirurgia de ids diferentes.
-			if(cirurgia_x.id == cirurgia_y.id or cirurgia_x < cirurgia_y):
-				continue
-			if(cirurgia_x.dia == cirurgia_y.dia and cirurgia_x.semana == cirurgia_y.semana and cirurgia_x.e != cirurgia_y.e and cirurgia_x.sala == cirurgia_y.sala):
+	#Verifica se todos que estão na mesma sala, possuem a mesma 
+	dia = 1
+	while(dia <= 5):
+		esp_sala = {}
+		for sala in Salas:
+			for cirurgia in Cirurgias:
+				if(cirurgia.dia == dia and cirurgia.sala == sala.id):
+					if(sala.id in esp_sala.keys()):
+						if(esp_sala[sala.id] != cirurgia.e):
+							# print("SALA {} COM CIRURGIA DIFERENTE !!!! ".format(sala.id))
+							return False
+					else:
+						esp_sala[sala.id] = cirurgia.e
+				
+		dia += 1	
+
+	#Verifica se o cirurgiao esta cumprindo o trabalho de 24 horas por dia e 100 horas por semana.
+	tempo_gasto_semana = {}
+	
+
+	dia = 1
+	while(dia <= 5):
+		tempo_gasto_dia = {}
+		for cirurgia in Cirurgias:
+			if(cirurgia.id != -1 and cirurgia.dia == dia):
+				try:
+					tempo_gasto_semana[cirurgia.cirurgiao] += cirurgia.w
+				except:
+					tempo_gasto_semana[cirurgia.cirurgiao] = cirurgia.w
+
+				try:
+					tempo_gasto_dia[cirurgia.cirurgiao] += cirurgia.w
+				except:
+					tempo_gasto_dia[cirurgia.cirurgiao] = cirurgia.w
+		for key in tempo_gasto_dia:
+			if(tempo_gasto_dia[key] > 24):
+				# print("Cirurgiao {} EXCEDEU DIA".format(key))
 				return False
+		dia += 1
+	for key in tempo_gasto_semana:
+		if(tempo_gasto_semana[key] > 100):
+			# print("Cirurgiao {} EXCEDEU SEMANA".format(key))
+			return False
+
 	return True
-
-
 #A sala tem especialidade
 def agenda(tempo,dia,semana,Cirurgias,Salas,Cirurgioes):
 	Cirurgias.sort(reverse=True)
@@ -377,7 +420,8 @@ def agenda(tempo,dia,semana,Cirurgias,Salas,Cirurgioes):
 					for cirurgiao in Cirurgioes:
 						if (cirurgiao.id == cirurgia.cirurgiao and   cirurgiao.hdia + cirurgia.tc <= 24 and cirurgiao.hsemana + cirurgia.tc <=100  ):					
 							#Configuro o cirurgiao
-							cirurgiao.utilizaCirurgiao(cirurgia.cirurgiao)
+							print("Cirurgiao :{} no dia {} usou {} ".format(cirurgiao.id,dia,cirurgia.tc))
+							cirurgiao.utilizaCirurgiao(cirurgia.tc)
 							
 							#Configuro a cirurgia
 							cirurgia.setCirurgiao( cirurgiao.id )
@@ -446,7 +490,8 @@ class Ant:
 		self.n = N
 		self.op = op
 		#Construo a funcao de probabilidade da formiga, de escolher uma operacao a ser realizada. prob[i][j][k], probabilidade de ir de i~j utilizando a operacao k
-		self.probability = [[[1.0/float(self.op) for x in range(op)] for x in range(N)] for y in range(N)] 
+		# self.probability = [[[1.0 / float(self.op) for x in range(op)] for x in range(N)] for y in range(N)]
+		self.probability = {}
 		#Indices dos vértices visitados
 		self.visited = []
 		#Quantidade de feromonio excretada pela formiga
@@ -469,12 +514,19 @@ class Ant:
 
 	def tamanhoCaminho(self):
 		#Neste problema o tamanho do caminho é a quantidade de arestas
+		
+		#O tamanho do caminho na verdade vai ser o Quanto esse caminho incrementou na solução final
+
+		# for edge in edges:
+
+
 		return len(self.edges)
 
 
 	def heuristica(self,vi,vj):
-		#Heuristica será o Delta: (Quanto se ganha ao utilizar a aresta,   FO(cnj2) - FO(cnj1)
-		return vj.value - vi.value
+		#Heuristica será o Delta: (Quanto se ganha ao utilizar a aresta,   FO(cnj2)/FO(cnj1), assim, quanto maior o ganho 
+		#melhor a atratividade de utilizar aquela aresta
+		return vj.value*1.0/ vi.value*1.0
 
 
 	def changeProbability(self,feromonio):
@@ -486,7 +538,7 @@ class Ant:
 		s = 0 #Soma de todas as probabilidades
 		
 		#A probabilidade será: Pi,j * Pk ( Prob de ir do vértice i ao vértice j utilizando Kth operacao)
-		print(self.at)
+		# print(self.at)
 		v = G.getNode(self.at)
 
 
@@ -496,39 +548,53 @@ class Ant:
 		for op in range(self.op):
 			vizinho,_id = v.chooseOP(op)
 			G.addNode(vizinho)
-			G.addEdge( G.getNode(self.at),op,vizinho,_id )
+			edge = (G.getNode(self.at),op,vizinho)
+			G.addEdge( G.getNode(self.at),op,vizinho )
 			#Se o vértice já foi visitado continua
 			if( G.nodes[vizinho] in self.visited):
 				continue
-			vizinhos.append( (vizinho,op,_id) )
+			vizinhos.append( edge )
 
 		
 			valor_heuristica = self.heuristica(v,vizinho)
 			# print("Valor da heuritica: ", valor_heuristica)
 			# print("Valor do feromonio: ", feromonio[ self.at ][ G.nodes[vizinho] ][op])
 
-			self.probability[ self.at ][G.nodes[vizinho]][op] = pow(feromonio[ self.at ][ G.nodes[vizinho] ][op],self.alfa)* pow(valor_heuristica,self.beta)
-			
-			s += self.probability[ self.at ][ G.nodes[vizinho] ][op]
+
+			# self.probability[ edge ] = pow(feromonio[ self.at ][ G.nodes[vizinho] ][op],self.alfa)* pow(valor_heuristica,self.beta)
+			try:
+				self.probability[ edge ] = pow(feromonio[ edge ],self.alfa)* pow(valor_heuristica,self.beta)
+			except:
+				feromonio[edge] = 1
+				self.probability[ edge ] = pow(feromonio[ edge ],self.alfa)* pow(valor_heuristica,self.beta)
+			s += self.probability[ edge ]
 
 		#Atualizo a probabilidade de todo mundo viável
-		for vizinho,op,id_ in vizinhos:
-			self.probability[ self.at] [G.nodes[vizinho] ][op] =self.probability[ self.at ][ G.nodes[vizinho]][op]/s
+		if(s != 0):
+			for edge in vizinhos:
+				self.probability[ edge ] = self.probability[ edge ]/s
 
 	def depositaFeromonio(self,feromonio,graph):
-		lenght = self.tamanhoCaminho()
-
+		# lenght = self.tamanhoCaminho()
+		print("Deposita feromonio")
 		for edge in self.edges:
-			
 			e = graph.getEdge(edge)
-			feromonio[ graph.nodes[e[0]]  ][ graph.nodes[e[2]] ][ e[1] ] = self.Q/(lenght*1.0) #Adiciono feromonio no caminho feromonio[i][j][op]
+			# print(e)
+			value_added = e[2].value/e[0].value
+			# Vao ser i,a e
+			if(e not in feromonio.keys()):
+				feromonio[ e ] = 1 + self.Q/(value_added*1.0) #Adiciono feromonio no caminho feromonio[i][j][op]
+			else:
+				feromonio[ e ] += self.Q/(value_added*1.0) #Adiciono feromonio no caminho feromonio[i][j][op]
 
-def evaporaFeromonio(feromonio,p,N,op):
-	for i in range(N):
-		for j in range(N):
-			for k in range(op): 
-				feromonio[i][j][k] = feromonio[i][j][k]*(1-p)
-
+def evaporaFeromonio(feromonio,p,graph):
+	print("Evapora Feromonio")
+	for edge in graph.edges.keys():	
+		#Caso nao tenha visitado aquela aresta ainda e nao tenha feromonio depositado, continue
+		try:
+			feromonio[edge] = feromonio[ edge ]*(1-p)
+		except:
+			pass
 
 
 
@@ -600,15 +666,24 @@ def change(Cirurgias):
 
 '''
 TODO:
-1- Criar a leitura das instancias do problema - 30 Min                            > Ok
-2- Verificar se a função gulosa está realizando o agendamento corretamente        > Ok
-3- Criar a função que verifica se as cirurgias foram agendadas corretamente       > Sem prioridade
-4- Alterar a função objetivo													  > Alterar a função objetivo
-5- Ajustar as formigas para fazerem a alteração do Problema                       > Ok ( Falta verificar se está tudo certo. )
-6- Criar e ajustar funções de de geração de vizinhança							  > Fazer
-7- Testar se o algoritmo está funcionando corretamente                            > Fazer
-8- Realizar Melhorias                                                             > Fazer
-9- Otimizar                                                                       > Inumeras funcoes podem ser otimizadas. 
+1- Criar a leitura das instancias do problema - 30 Min                            		> Ok
+2- Verificar se a função gulosa está realizando o agendamento corretamente        		> Ok
+3- Criar a função que verifica se as cirurgias foram agendadas corretamente       		> Sem prioridade
+4- Alterar a função objetivo													  		> Alterar a função objetivo
+5- Ajustar as formigas para fazerem a alteração do Problema                       		> Ok ( Falta verificar se está tudo certo. )
+6- Criar e ajustar funções de de geração de vizinhança							  		> Ok
+7- Testar se o algoritmo está funcionando corretamente                            		> FAZER ( PRIORIDADE )
+ 7.1 - Testar se as iterações estão corretas, analisar o comportamento das formigas     > FAZER ( PRIORIDADE ) 
+ 7.2 - Testar se as funções de probabilidade estão sendo alteradas de acordo			> FAZER ( PRIORIDADE )
+ 7.3 - TESTAR A FO ( URGÊNCIA MÁXIMA ! )
+8- Realizar Melhorias                                                             		> FAZER
+ 8.1 Não visitar ESTADOS falhos !!! Isso pode prejudicar o algoritmo, ou criar uma operacao que remove INCONSISTENCIA !!!! ( Opção interessante !)
+ 8.2 Verificar se não visitando com estados RUINS melhora a convergência do algoritmo
+
+9- Otimizar                                                                       		> Inumeras funcoes podem ser otimizadas. 
+ 9.1 Aumentar a probabilidade de escolha de vertices com FO BAIXA !
+
+10. Alterar 46 > 48 e adicionar variáveis globais
 '''
 
 
@@ -637,33 +712,44 @@ def main():
 	best_rota = []
 	best_value = 10000000000
 
-	max_iter = 1
-	N = 100
+	max_iter = 100
+	N = 1000
 	alfa = 1
 	beta = 1
 	p = 0.5
 	
 	# graph = [[0 for x in range(N)] for y in range(N)]  
-	feromonio = [[[1 for k in range(10)] for j in range(N)] for i in range(N)] # Feromonio[i][j][op]
+	#Problema aqui, visita muitos nós e da overflow
+	# feromonio = [[[1 for k in range(2)] for j in range(N)] for i in range(N)] # Feromonio[i][j][op]
 	
+	#Alteração do feromonio para acessar um estado com lista encadeada, entrada é a aresta, saída é o total de ferômonio depositado nesta aresta
+	#Aresta será levado em consideração o Mapeamento da aresta no GRAFO
+	#Inicialmente TODOS começam com a mesma quantidade de ferômonio, no momento do depósito ( caso seja a primeira vez será adicionado o valor de 1 unidade)
+	feromonio = {}
 	
 	it = 0
 	best_formiga = None
 	max_nodes = 10 # Cada formiga irá descobrir 10 nós
-	n_formigas = 2
+	n_formigas = 10
 
 
 	for i in range(n_formigas):
 		Ants.append( Ant(N,2,alfa,beta,1) )
 	f = 0
+	best_visited = s1.value
 	while(it != max_iter):
+
+		#Fazer uma mutação nas Formigas !!!
+		#Armazenar nas formigas, o caminho de arestas com MENOR valor possivel
 		for ant in Ants:
 			print("Inicio da formiga id {}".format(f%n_formigas))
 			f += 1
 			ant.clear()
 			
 			#Para cada inicio, coloca uma formiga em uma cidade aleatória diferente.
-			node_start = random.randint(0,len(G.nodes)-1)
+
+			#Aumentar a chance de pegar nós com baixa FO, alguns nós com baixo e outros com FO grande
+			node_start = random.randint(0,len(G.nodes)-1) 
 			ant.visitCity(node_start)
 			print("Visita a cidade: {}".format(node_start))
 			visited_cnt = 1 # a cidade inicial já foi visitada.
@@ -682,28 +768,40 @@ def main():
 				Ni = [] #Lista de vizinhança, vai possuir uma tupla (state,prob)
 				prob_Ni = []
 
-				print("Aplicando a operacao")
+				
 				for op in range(ant.op):
-					print(op)
+					print("Aplicando a operacao {}".format(op))
 					vizinho,_id = v.chooseOP(op)
-					print("Vizinho de valor: {}".format(vizinho.value))
+					# print("Vizinho de valor: {}".format(vizinho.value))
+					if(vizinho.value >= pow(10,9)):
+						continue
 					# if(vizinho == v):
 					# 	print("Vizinho igual ao vértice atual")
 					# 	continue
 					# print(vizinhançanho.value)
+					if(vizinho.value < best_visited):
+						best_visited = vizinho.value
 					G.addNode(vizinho) #Adiciono o nó ao grafo
-					G.addEdge( v,op,vizinho, _id  ) #Adiciono a vizinhança ao grafo
+					G.addEdge( v,op,vizinho,   ) #Adiciono a vizinhança ao grafo
 
-					Ni.append( G.edges[ (v,op,vizinho,_id) ] )
+					Ni.append( G.edges[ (v,op,vizinho) ] )
 
 					#A probabilidade de se seguir por aquele vertice, sera dada pelo vetor de probabilidades inicial, onde todos os vertices sao equiprovaveis
-					prob_Ni.append( ant.probability[ G.nodes[v] ][ G.nodes[ vizinho ] ][op] )
-
+					edge = ( v,op,vizinho )
+					try:
+						prob_Ni.append( ant.probability[edge] )
+					except:
+						#Todos iniciam com a mesma probabilidade, sendo o numero de operacoes
+						ant.probability[edge] = 1.0/ant.op
+						prob_Ni.append(ant.probability[edge])
+				
 				if(len(Ni) == 0):
 					break
 
-				idx = np.random.choice(len(Ni),1, p = prob_Ni)[0] #Escolho qual aresta seguir.
-				
+				if(sum(prob_Ni) != 1):
+					idx = np.random.choice(len(Ni),1, p = [1])[0] #Escolho qual aresta seguir.
+				else:
+					idx = np.random.choice(len(Ni),1, p = prob_Ni)[0] #Escolho qual aresta seguir.
 				
 				estado_escolhido = G.getEdge( Ni[idx] )[2] #Escolho o estado a ser utilizado
 
@@ -730,7 +828,7 @@ def main():
 				best_value = value
 				best_rota = ant.edges
 			# print("Fim da formiga")
-		evaporaFeromonio(feromonio,p,N,op)
+		evaporaFeromonio(feromonio,p,G)
 
 		#Altero a probabilidade de escolher aquela aresta.		
 		
@@ -738,6 +836,6 @@ def main():
 
 		it += 1
 
+	print("MELHOR VALOR ENCONTRADO: {}".format(best_visited))
 
 main()
-
