@@ -56,8 +56,8 @@ def FO(cirurgias, salas):
     print("hey yo!")
     penalty = 0
     # Dar penalidade para instancias com restrições falhadas diferentemente?
-    if not verificaInstancia(cirurgias, salas):
-        penalty += pow(10, 9) + 1
+    # if not verificaInstancia(cirurgias, salas):
+    #     penalty += pow(10, 9) + 1
     for cirurgia in cirurgias:
         vc = 0
         xcstd = 0

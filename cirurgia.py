@@ -331,9 +331,9 @@ def FO(Cirurgias):
 	
 	penalty = 0
 	#Dar penalidade para instancias com restrições falhadas diferentemente?
-	if(verificaInstancia(Cirurgias) == False):
-		# print("Instância FALHA")
-		penalty += pow(10,9)+1
+	# if(verificaInstancia(Cirurgias) == False):
+	# 	# print("Instância FALHA")
+	# 	penalty += pow(10,9)+1
 	for cirurgia in Cirurgias:
 		vc = 0
 		xcstd = 0
