@@ -692,7 +692,9 @@ TODO:
 7- Testar se o algoritmo está funcionando corretamente                            		> FAZER ( PRIORIDADE )
  7.1 - Testar se as iterações estão corretas, analisar o comportamento das formigas     > FAZER ( PRIORIDADE ) (RODRIGO) 
  7.2 - Testar se as funções de probabilidade estão sendo alteradas de acordo			> FAZER ( PRIORIDADE ) (RODRIGO)
- 7.3 - TESTAR A FO ( URGÊNCIA MÁXIMA ! )                                                > FAZER (VILMA) 
+ 7.3 - TESTAR A FO ( URGÊNCIA MÁXIMA ! )                                                > FAZER ( VILMA )  
+ 7.4 - Criar dois operadores : Adição e Remoção Guloso 									> FAZER ( VILMA )
+
 8- Realizar Melhorias                                                             		> FAZER
  8.1 Não visitar ESTADOS falhos !!! Isso pode prejudicar o algoritmo, ou criar uma operacao que remove INCONSISTENCIA !!!! ( PRONTO !)
  8.2 Verificar se não visitando com estados RUINS melhora a convergência do algoritmo
