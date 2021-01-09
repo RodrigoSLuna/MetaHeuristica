@@ -331,6 +331,7 @@ def FO(Cirurgias):
 	penalty = 0
 	#Dar penalidade para instancias com restrições falhadas diferentemente?
 	if(verificaInstancia(Cirurgias) == False):
+		print("Instância FALHA")
 		penalty += pow(10,9)+1
 	for cirurgia in Cirurgias:
 		vc = 0
@@ -375,7 +376,7 @@ def verificaInstancia(Cirurgias):
 				if(cirurgia.dia == dia and cirurgia.sala == sala.id):
 					if(sala.id in esp_sala.keys()):
 						if(esp_sala[sala.id] != cirurgia.e):
-							# print("SALA {} COM CIRURGIA DIFERENTE !!!! ".format(sala.id))
+							print("SALA {} COM CIRURGIA DIFERENTE !!!! ".format(sala.id))
 							return False
 					else:
 						esp_sala[sala.id] = cirurgia.e
@@ -392,22 +393,22 @@ def verificaInstancia(Cirurgias):
 		for cirurgia in Cirurgias:
 			if(cirurgia.id != -1 and cirurgia.dia == dia):
 				try:
-					tempo_gasto_semana[cirurgia.cirurgiao] += cirurgia.w
+					tempo_gasto_semana[cirurgia.cirurgiao] += cirurgia.tc
 				except:
-					tempo_gasto_semana[cirurgia.cirurgiao] = cirurgia.w
+					tempo_gasto_semana[cirurgia.cirurgiao] = cirurgia.tc
 
 				try:
-					tempo_gasto_dia[cirurgia.cirurgiao] += cirurgia.w
+					tempo_gasto_dia[cirurgia.cirurgiao] += cirurgia.tc
 				except:
-					tempo_gasto_dia[cirurgia.cirurgiao] = cirurgia.w
+					tempo_gasto_dia[cirurgia.cirurgiao] = cirurgia.tc
 		for key in tempo_gasto_dia:
 			if(tempo_gasto_dia[key] > 24):
-				# print("Cirurgiao {} EXCEDEU DIA".format(key))
+				print("Cirurgiao {} EXCEDEU DIA".format(key))
 				return False
 		dia += 1
 	for key in tempo_gasto_semana:
 		if(tempo_gasto_semana[key] > 100):
-			# print("Cirurgiao {} EXCEDEU SEMANA".format(key))
+			print("Cirurgiao {} EXCEDEU SEMANA".format(key))
 			return False
 
 	return True
@@ -716,9 +717,9 @@ def main():
 	printSolution(Cirurgias)
 	print("Funcao Objetivo: ", FO(Cirurgias))
 	
-	'''
-		Inicio da Heurística
-	'''
+	# '''
+	# 	Inicio da Heurística
+	# '''
 	s1 = State(Cirurgias,FO(Cirurgias))
 	global G,feromonio
 	G = Graph()
@@ -731,7 +732,7 @@ def main():
 	best_rota = []
 	best_value = 10000000000
 
-	max_iter = 1000
+	max_iter = 100
 	N = 1000
 	alfa = 1
 	beta = 1
@@ -748,7 +749,7 @@ def main():
 	
 	it = 0
 	best_formiga = None
-	max_nodes = 100 # Cada formiga irá descobrir 10 nós
+	max_nodes = 10 # Cada formiga irá descobrir 10 nós
 	n_formigas = 100
 
 
