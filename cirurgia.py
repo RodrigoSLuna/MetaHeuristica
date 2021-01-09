@@ -172,6 +172,7 @@ class State:
 						if(tc_fim != 46):
 							tc_fim -= 2
 						value = tc_fim - tc +1
+						#t[(tempo_disponivel,id)] = ( dia,sala.id, tc )
 						if(value > 0):
 							tempos_d[ (value,qt_f) ] = ( dia, sala.id, tc )
 							qt_f += 1
@@ -183,6 +184,8 @@ class State:
 		#A adição é feita no tempo correto, no entanto, para verificar se a sala/cirurgiao possam ser utilizados, será verificado em um próximo momento
 		#Procuro as cirurgias que possam ser agendadas com o tempo
 		# print(tempos_d)
+
+		#Garantir escopo de viabiliade ( Cirurgia só é possível caso Cirurgiao e Sala possam realizá-la)
 		pos_cirurgia = []
 		for wc,_id in tempos_d.keys():
 			for cirurgia in self.Cirurgias:
@@ -306,7 +309,23 @@ lp = { 1:3, 2:15,3:60,4:365 }
 fp = { 1:90 , 2:20, 3:5, 4:1 }
 
 
-#Necessário checar se essa FO está CORRETA ! (Toy2 está com uma solução diferente Para 2 salas. Checar se a solução está CORRETA)
+#Necessário checar se essa FO está CORRETA ! 
+#(Toy2 está com uma solução diferente Para 2 salas. Checar se a solução está CORRETA)
+
+'''
+
+Remover alguma Cirurgia
+
+Conjuntos deletar: (X,Y,Z)
+FO>X : 1000
+FO<X : 1200
+
+FO>Y : 1000
+FO<Y : 1500
+
+FO>Z : 1000
+FO<Z : 2000
+'''
 def FO(Cirurgias):
 	
 	penalty = 0
@@ -518,8 +537,6 @@ class Ant:
 		#O tamanho do caminho na verdade vai ser o Quanto esse caminho incrementou na solução final
 
 		# for edge in edges:
-
-
 		return len(self.edges)
 
 
@@ -579,14 +596,16 @@ class Ant:
 		print("Deposita feromonio")
 		for edge in self.edges:
 			e = graph.getEdge(edge)
-			# print(e)
-			value_added = e[2].value/e[0].value
+			# print(E1,operacao, EX )
+			value_added = e[0].value/e[2].value
 			# Vao ser i,a e
 			if(e not in feromonio.keys()):
 				feromonio[ e ] = 1 + self.Q/(value_added*1.0) #Adiciono feromonio no caminho feromonio[i][j][op]
 			else:
 				feromonio[ e ] += self.Q/(value_added*1.0) #Adiciono feromonio no caminho feromonio[i][j][op]
 
+# E1
+#E3 E4
 def evaporaFeromonio(feromonio,p,graph):
 	print("Evapora Feromonio")
 	for edge in graph.edges.keys():	
@@ -595,8 +614,6 @@ def evaporaFeromonio(feromonio,p,graph):
 			feromonio[edge] = feromonio[ edge ]*(1-p)
 		except:
 			pass
-
-
 
 def read_instances(Cirurgias,Salas,Cirurgioes):
 	x = input()
@@ -673,15 +690,15 @@ TODO:
 5- Ajustar as formigas para fazerem a alteração do Problema                       		> Ok ( Falta verificar se está tudo certo. )
 6- Criar e ajustar funções de de geração de vizinhança							  		> Ok
 7- Testar se o algoritmo está funcionando corretamente                            		> FAZER ( PRIORIDADE )
- 7.1 - Testar se as iterações estão corretas, analisar o comportamento das formigas     > FAZER ( PRIORIDADE ) 
- 7.2 - Testar se as funções de probabilidade estão sendo alteradas de acordo			> FAZER ( PRIORIDADE )
- 7.3 - TESTAR A FO ( URGÊNCIA MÁXIMA ! )
+ 7.1 - Testar se as iterações estão corretas, analisar o comportamento das formigas     > FAZER ( PRIORIDADE ) (RODRIGO) 
+ 7.2 - Testar se as funções de probabilidade estão sendo alteradas de acordo			> FAZER ( PRIORIDADE ) (RODRIGO)
+ 7.3 - TESTAR A FO ( URGÊNCIA MÁXIMA ! )                                                > FAZER (VILMA) 
 8- Realizar Melhorias                                                             		> FAZER
- 8.1 Não visitar ESTADOS falhos !!! Isso pode prejudicar o algoritmo, ou criar uma operacao que remove INCONSISTENCIA !!!! ( Opção interessante !)
+ 8.1 Não visitar ESTADOS falhos !!! Isso pode prejudicar o algoritmo, ou criar uma operacao que remove INCONSISTENCIA !!!! ( PRONTO !)
  8.2 Verificar se não visitando com estados RUINS melhora a convergência do algoritmo
 
 9- Otimizar                                                                       		> Inumeras funcoes podem ser otimizadas. 
- 9.1 Aumentar a probabilidade de escolha de vertices com FO BAIXA !
+ 9.1 Aumentar a probabilidade de escolha de vertices com FO BAIXA !						> ( Pensar )
 
 10. Alterar 46 > 48 e adicionar variáveis globais
 '''
@@ -712,7 +729,7 @@ def main():
 	best_rota = []
 	best_value = 10000000000
 
-	max_iter = 100
+	max_iter = 10
 	N = 1000
 	alfa = 1
 	beta = 1
