@@ -350,7 +350,7 @@ def FO(Cirurgias):
 		if(cirurgia.p == 1 and cirurgia.dia > 1):
 			p1 = 1
 
-		penalty += 10*( pow(cirurgia.w +2, cirurgia.dia) )*p1
+		penalty += (pow(10*(cirurgia.w +2), cirurgia.dia) )*p1
 
 		if(cirurgia.dia != -1 ):
 			penalty += ( pow(cirurgia.w +2 + cirurgia.dia, 2) + pow( cirurgia.w + 2 + cirurgia.dia - lp[cirurgia.dia],2 )*vc ) * xcstd
