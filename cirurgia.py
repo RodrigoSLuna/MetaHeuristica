@@ -862,4 +862,6 @@ def main():
 	printSolution((best_solution))
 	fim = time.time()
 	print(fim-start)
-main()
+
+if __name__=='__main__':
+    main()
