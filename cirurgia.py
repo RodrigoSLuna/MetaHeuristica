@@ -148,7 +148,7 @@ class State:
 					for cirurgia in self.Cirurgias:
 						#é levado em consideração a limpeza da sala.
 						#Se a cirurgia finaizou 2 tcs atrás, esse tc não é disponível, pois é da limpeza
-						if(cirurgia.dia == dia and (cirurgia.tc_inicio == tc or cirurgia.tc_fim-2 == tc ) and cirurgia.sala == sala.id):
+						if(cirurgia.dia == dia and (cirurgia.tc_inicio == tc or cirurgia.tc_fim - 2 == tc ) and cirurgia.sala == sala.id):
 							found = True
 							break
 
@@ -173,7 +173,7 @@ class State:
 							tc_fim -= 2
 						value = tc_fim - tc +1
 						#t[(tempo_disponivel,id)] = ( dia,sala.id, tc )
-						if(value > 0):
+						if(value > 0 and tc_fim > 0):
 							tempos_d[ (value,qt_f) ] = ( dia, sala.id, tc )
 							qt_f += 1
 				tc+=1
@@ -242,8 +242,8 @@ class Cirurgia:
 	def add(self,dia,sala,inicio):
 		self.dia = dia
 		self.sala = sala
-		self.inicio = inicio
-		self.fim = inicio+self.tc -1
+		self.tc_inicio = inicio
+		self.tc_fim = inicio+self.tc -1
 		
 	def remove(self):
 		# print("Removido cirurgia_{}".format(self.id))
@@ -337,7 +337,7 @@ def FO(Cirurgias):
 		xcstd = 0
 		zc = 0
 		p1 = 0
-		if(cirurgia.dia == -1):
+		if(cirurgia.dia == -1 or cirurgia.tc_inicio == -1 or cirurgia.tc_fim == -1):
 			zc = 1
 		else:
 			xcstd = 1
@@ -350,7 +350,7 @@ def FO(Cirurgias):
 
 		penalty += 10*( pow(cirurgia.w +2, cirurgia.dia) )*p1
 
-		if(cirurgia.dia != -1):
+		if(cirurgia.dia != -1 ):
 			penalty += ( pow(cirurgia.w +2 + cirurgia.dia, 2) + pow( cirurgia.w + 2 + cirurgia.dia - lp[cirurgia.dia],2 )*vc ) * xcstd
 		else:
 			penalty += ( pow( cirurgia.w + 7 ,2)*fp[cirurgia.p] +  fp[cirurgia.p]*vc*( pow(cirurgia.w +9 - lp[cirurgia.p],2) )) * zc
@@ -639,7 +639,7 @@ def read_instances(Cirurgias,Salas,Cirurgioes):
 def printSolution(Cirurgias):
 	print("Solucao encontrada: ")
 	for cirurgia in Cirurgias:
-		print("Id: ", cirurgia.id, " Prioridade: ", cirurgia.p , " Especialidade: ",cirurgia.e ,  " sala: " , cirurgia.sala, " dia: ", cirurgia.dia, " semana "  ,cirurgia.semana, " Inicio ", cirurgia.tc_inicio, " Fim ", cirurgia.tc_fim )
+		print("Id: ", cirurgia.id, " Prioridade: ", cirurgia.p , " Especialidade: ",cirurgia.e ,  " sala: " , cirurgia.sala, " dia: ", cirurgia.dia, " Inicio ", cirurgia.tc_inicio, " Fim ", cirurgia.tc_fim )
 
 
 
@@ -731,7 +731,7 @@ def main():
 	best_rota = []
 	best_value = 10000000000
 
-	max_iter = 10
+	max_iter = 1000
 	N = 1000
 	alfa = 1
 	beta = 1
@@ -748,8 +748,8 @@ def main():
 	
 	it = 0
 	best_formiga = None
-	max_nodes = 10 # Cada formiga irá descobrir 10 nós
-	n_formigas = 10
+	max_nodes = 100 # Cada formiga irá descobrir 10 nós
+	n_formigas = 100
 
 
 	for i in range(n_formigas):

@@ -100,7 +100,7 @@ def main():
 	best_rota = []
 	best_value = 10000000000
 
-	max_iter = 100
+	max_iter = 1000
 	N = 5
 	alfa = 1
 	beta = 1
