@@ -756,6 +756,7 @@ def main():
 		Ants.append( Ant(N,2,alfa,beta,1) )
 	f = 0
 	best_visited = s1.value
+	best_solution = s1.Cirurgias.copy()
 	while(it != max_iter):
 
 		#Fazer uma mutação nas Formigas !!!
@@ -773,7 +774,6 @@ def main():
 			print("Visita a cidade: {}".format(node_start))
 			visited_cnt = 1 # a cidade inicial já foi visitada.
 			#Enquanto não visitou todos os vértices, continua visitando:
-
 
 			while(visited_cnt != max_nodes): 
 
@@ -800,6 +800,7 @@ def main():
 					# print(vizinhançanho.value)
 					if(vizinho.value < best_visited):
 						best_visited = vizinho.value
+						best_solution = vizinho.Cirurgias.copy()
 					G.addNode(vizinho) #Adiciono o nó ao grafo
 					G.addEdge( v,op,vizinho,   ) #Adiciono a vizinhança ao grafo
 
@@ -856,5 +857,5 @@ def main():
 		it += 1
 
 	print("MELHOR VALOR ENCONTRADO: {}".format(best_visited))
-
+	printSolution((best_solution))
 main()
