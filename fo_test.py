@@ -79,10 +79,15 @@ def FO(cirurgias, salas):
         penalty += pow(10 * (cirurgia.w + 2), cirurgia.dia) * p1
 
         if cirurgia.dia != -1:
-            penalty += (pow(cirurgia.w + 2 + cirurgia.dia, 2) + pow(
-                cirurgia.w + 2 + cirurgia.dia - lp[cirurgia.dia],
-                2) * vc) * xcstd
+            print("scheduled")
+            if vc == 1:
+                print("vencida")
+            penalty += (pow(cirurgia.w + 2 + cirurgia.dia, 2) +
+                        (pow(cirurgia.w + 2 + cirurgia.dia - lp[cirurgia.dia],
+                             2) * vc)
+                        ) * xcstd
         else:
+            print("not scheduled")
             penalty += (pow(cirurgia.w + 7, 2) * fp[cirurgia.p] + fp[
                 cirurgia.p] * vc * (
                             pow(cirurgia.w + 9 - lp[cirurgia.p], 2))) * zc
@@ -113,13 +118,85 @@ def test_fo_toy1_original():
     return FO(cirurgias, salas)
 
 
-def set_toy1_original_solution():
+def test_fo_toy1_original_changew():
+    cirurgias, salas = set_toy1_original_solution(20)
+
+    return FO(cirurgias, salas)
+
+
+def test_fo_toy2_original_2rooms():
+    cirurgias, salas = set_toy2_original_solution()
+
+    return FO(cirurgias, salas)
+
+
+def set_toy2_original_solution():
+    cirurgias = [
+        Cirurgia(1, 1, 1, 1, 1, 5),
+        Cirurgia(2, 1, 1, 1, 1, 13),
+        Cirurgia(3, 1, 1, 1, 1, 8),
+        Cirurgia(4, 1, 1, 1, 1, 11),
+        Cirurgia(5, 2, 10, 2, 2, 10),
+        Cirurgia(6, 3, 9, 2, 2, 14),
+        Cirurgia(7, 2, 8, 2, 2, 11),
+        Cirurgia(8, 3, 5, 2, 2, 5)
+    ]
+    salas = [Sala(1), Sala(2)]
+
+    cirurgias[0].sala = 1
+    cirurgias[0].tc_inicio = 1
+    cirurgias[0].tc_fim = 5
+    cirurgias[0].dia = 1
+    cirurgias[0].semana = 1
+    cirurgias[1].sala = 1
+    cirurgias[1].tc_inicio = 8
+    cirurgias[1].tc_fim = 20
+    cirurgias[1].dia = 1
+    cirurgias[1].semana = 1
+
+    cirurgias[2].sala = 1
+    cirurgias[2].tc_inicio = 1
+    cirurgias[2].tc_fim = 8
+    cirurgias[2].dia = 2
+    cirurgias[2].semana = 1
+    cirurgias[3].sala = 1
+    cirurgias[3].tc_inicio = 11
+    cirurgias[3].tc_fim = 21
+    cirurgias[3].dia = 2
+    cirurgias[3].semana = 1
+
+    cirurgias[4].sala = 2
+    cirurgias[4].tc_inicio = 1
+    cirurgias[4].tc_fim = 10
+    cirurgias[4].dia = 1
+    cirurgias[4].semana = 1
+    cirurgias[6].sala = 2
+    cirurgias[6].tc_inicio = 13
+    cirurgias[6].tc_fim = 23
+    cirurgias[6].dia = 1
+    cirurgias[6].semana = 1
+
+    cirurgias[5].sala = 2
+    cirurgias[5].tc_inicio = 1
+    cirurgias[5].tc_fim = 14
+    cirurgias[5].dia = 2
+    cirurgias[5].semana = 1
+    cirurgias[7].sala = 2
+    cirurgias[7].tc_inicio = 17
+    cirurgias[7].tc_fim = 23
+    cirurgias[7].dia = 2
+    cirurgias[7].semana = 1
+
+    return cirurgias, salas
+
+
+def set_toy1_original_solution(surgery5_w=10):
     cirurgias = [
         Cirurgia(1, 1, 1, 1, 1, 5),
         Cirurgia(2, 1, 1, 1, 1, 13),
         Cirurgia(3, 1, 1, 1, 2, 8),
         Cirurgia(4, 1, 1, 1, 2, 11),
-        Cirurgia(5, 2, 10, 2, 3, 10),
+        Cirurgia(5, 2, surgery5_w, 2, 3, 10),
         Cirurgia(6, 3, 9, 2, 4, 14),
         Cirurgia(7, 2, 8, 2, 3, 11),
         Cirurgia(8, 3, 5, 2, 4, 5)
@@ -172,6 +249,5 @@ if __name__ == '__main__':
     print("I got here!")
     print(test_fo_toy1_original())
     print(test_fo_toy1_urgency_delay())
-
-
-
+    print(test_fo_toy1_original_changew())
+    print(test_fo_toy2_original_2rooms())
