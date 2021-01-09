@@ -1,6 +1,7 @@
 import numpy as np
 import random
 import copy
+import time
 #Variáveis globais
 Ants = []
 Cirurgias = []
@@ -122,7 +123,7 @@ class State:
 		New_Cirurgias = copy.deepcopy(self.Cirurgias)
 
 		id_ = random.choice(self.id_agendadas)
-		print("Cirurgia id: {} desagendada".format(id_))
+		# print("Cirurgia id: {} desagendada".format(id_))
 		for cirurgia in New_Cirurgias:
 			#Desagenda a cirurgia.
 			if(cirurgia.id == id_ ):
@@ -331,7 +332,7 @@ def FO(Cirurgias):
 	penalty = 0
 	#Dar penalidade para instancias com restrições falhadas diferentemente?
 	if(verificaInstancia(Cirurgias) == False):
-		print("Instância FALHA")
+		# print("Instância FALHA")
 		penalty += pow(10,9)+1
 	for cirurgia in Cirurgias:
 		vc = 0
@@ -376,7 +377,7 @@ def verificaInstancia(Cirurgias):
 				if(cirurgia.dia == dia and cirurgia.sala == sala.id):
 					if(sala.id in esp_sala.keys()):
 						if(esp_sala[sala.id] != cirurgia.e):
-							print("SALA {} COM CIRURGIA DIFERENTE !!!! ".format(sala.id))
+							# print("SALA {} COM CIRURGIA DIFERENTE !!!! ".format(sala.id))
 							return False
 					else:
 						esp_sala[sala.id] = cirurgia.e
@@ -403,12 +404,12 @@ def verificaInstancia(Cirurgias):
 					tempo_gasto_dia[cirurgia.cirurgiao] = cirurgia.tc
 		for key in tempo_gasto_dia:
 			if(tempo_gasto_dia[key] > 24):
-				print("Cirurgiao {} EXCEDEU DIA".format(key))
+				# print("Cirurgiao {} EXCEDEU DIA".format(key))
 				return False
 		dia += 1
 	for key in tempo_gasto_semana:
 		if(tempo_gasto_semana[key] > 100):
-			print("Cirurgiao {} EXCEDEU SEMANA".format(key))
+			# print("Cirurgiao {} EXCEDEU SEMANA".format(key))
 			return False
 
 	return True
@@ -440,7 +441,7 @@ def agenda(tempo,dia,semana,Cirurgias,Salas,Cirurgioes):
 					for cirurgiao in Cirurgioes:
 						if (cirurgiao.id == cirurgia.cirurgiao and   cirurgiao.hdia + cirurgia.tc <= 24 and cirurgiao.hsemana + cirurgia.tc <=100  ):					
 							#Configuro o cirurgiao
-							print("Cirurgiao :{} no dia {} usou {} ".format(cirurgiao.id,dia,cirurgia.tc))
+							# print("Cirurgiao :{} no dia {} usou {} ".format(cirurgiao.id,dia,cirurgia.tc))
 							cirurgiao.utilizaCirurgiao(cirurgia.tc)
 							
 							#Configuro a cirurgia
@@ -594,7 +595,7 @@ class Ant:
 
 	def depositaFeromonio(self,feromonio,graph):
 		# lenght = self.tamanhoCaminho()
-		print("Deposita feromonio")
+		# print("Deposita feromonio")
 		for edge in self.edges:
 			e = graph.getEdge(edge)
 			# print(E1,operacao, EX )
@@ -608,7 +609,7 @@ class Ant:
 # E1
 #E3 E4
 def evaporaFeromonio(feromonio,p,graph):
-	print("Evapora Feromonio")
+	# print("Evapora Feromonio")
 	for edge in graph.edges.keys():	
 		#Caso nao tenha visitado aquela aresta ainda e nao tenha feromonio depositado, continue
 		try:
@@ -709,7 +710,7 @@ TODO:
 
 
 def main():
-	
+	start = time.time()
 	read_instances(Cirurgias,Salas,Cirurgioes)
 	check(Cirurgias,Salas,Cirurgioes) 
 	agendaGreedy(len(Salas),Cirurgias,Salas,Cirurgioes )
@@ -750,7 +751,7 @@ def main():
 	it = 0
 	best_formiga = None
 	max_nodes = 10 # Cada formiga irá descobrir 10 nós
-	n_formigas = 100
+	n_formigas = 10
 
 
 	for i in range(n_formigas):
@@ -763,7 +764,7 @@ def main():
 		#Fazer uma mutação nas Formigas !!!
 		#Armazenar nas formigas, o caminho de arestas com MENOR valor possivel
 		for ant in Ants:
-			print("Inicio da formiga id {}".format(f%n_formigas))
+			# print("Inicio da formiga id {}".format(f%n_formigas))
 			f += 1
 			ant.clear()
 			
@@ -772,16 +773,16 @@ def main():
 			#Aumentar a chance de pegar nós com baixa FO, alguns nós com baixo e outros com FO grande
 			node_start = random.randint(0,len(G.nodes)-1) 
 			ant.visitCity(node_start)
-			print("Visita a cidade: {}".format(node_start))
+			# print("Visita a cidade: {}".format(node_start))
 			visited_cnt = 1 # a cidade inicial já foi visitada.
 			#Enquanto não visitou todos os vértices, continua visitando:
 
 			while(visited_cnt != max_nodes): 
 
 				#Coleto onde a formiga K está
-				print(len(ant.visited),ant.visited[-1])
+				# print(len(ant.visited),ant.visited[-1])
 				v = G.getNode(ant.visited[-1])
-				print(" Está no vértice com valor: ", v.value)
+				# print(" Está no vértice com valor: ", v.value)
 				
 				#Para cada operacao, verifico a de maior vizinhança
 
@@ -790,7 +791,7 @@ def main():
 
 				
 				for op in range(ant.op):
-					print("Aplicando a operacao {}".format(op))
+					# print("Aplicando a operacao {}".format(op))
 					vizinho,_id = v.chooseOP(op)
 					# print("Vizinho de valor: {}".format(vizinho.value))
 					if(vizinho.value >= pow(10,9)):
@@ -826,10 +827,10 @@ def main():
 				
 				estado_escolhido = G.getEdge( Ni[idx] )[2] #Escolho o estado a ser utilizado
 
-				print(" Tentou ir do vertice: {} com a operacao: {} para o vértice {}".format(v.value, G.getEdge(Ni[idx])[1] ,estado_escolhido.value ))
+				# print(" Tentou ir do vertice: {} com a operacao: {} para o vértice {}".format(v.value, G.getEdge(Ni[idx])[1] ,estado_escolhido.value ))
 				
 				if( ant.isVisited( G.nodes[estado_escolhido] ) == False ):
-					print("Visistou o vértice com valor {}".format(estado_escolhido.value))
+					# print("Visistou o vértice com valor {}".format(estado_escolhido.value))
 					next_v = estado_escolhido
 					visited_cnt += 1
 			
@@ -859,4 +860,6 @@ def main():
 
 	print("MELHOR VALOR ENCONTRADO: {}".format(best_visited))
 	printSolution((best_solution))
+	fim = time.time()
+	print(fim-start)
 main()
