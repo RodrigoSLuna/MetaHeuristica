@@ -105,9 +105,9 @@ class State:
 							return False
 			
 		return True
-		def __gt__(self,other):
-			if(self.value > other.value ):
-				return True
+	def __gt__(self,other):
+		if(self.value > other.value ):
+			return True
 
 	def chooseOP(self,op):
 		if(op == 0):
@@ -654,8 +654,17 @@ def printSolution(Cirurgias):
 	print("Solucao encontrada: ")
 	for cirurgia in Cirurgias:
 		print("Id: ", cirurgia.id, " Prioridade: ", cirurgia.p , " Especialidade: ",cirurgia.e ,  " sala: " , cirurgia.sala, " dia: ", cirurgia.dia, " Inicio ", cirurgia.tc_inicio, " Fim ", cirurgia.tc_fim )
+	print("Salvando solucao")
 
+	max_id = 0
+	for  cirurgia in Cirurgias:
+		max_id = max(max_id, cirurgia.id)
 
+	datas = []
+	for i in range(max_id):
+		for cirurgia in Cirurgias:
+			if(i+1 == cirurgia.id):
+				print(cirurgia.id,":",cirurgia.sala,":",cirurgia.dia,":",cirurgia.tc_inicio)
 
 def checkConstrains(Cirurgias,Salas,Cirurgioes):
 	#Verifica se não extrapola a quantidade de tempo
@@ -757,14 +766,15 @@ def main():
 	G = Graph()
 	
 	#Nó inicial das formigas
-	G.addNode(s1)		
+	G.addNode(s1)
+	G.addNode(s2)		
 
 	#Inicialmente todas as formigas iniciam a sua busca no nó 0, que é o da solução gulosa
 
 	best_rota = []
 	best_value = 10000000000
 
-	max_iter = 100
+	max_iter = 10
 	N = 1000
 	alfa = 1
 	beta = 1
@@ -802,7 +812,7 @@ def main():
 			#Para cada inicio, coloca uma formiga em uma cidade aleatória diferente.
 			#Aumentar a chance de pegar nós com baixa FO, alguns nós com baixo e outros com FO grande
 			
-			node_start = random.randint(0,len(G.nodes)-1) 
+			node_start = getStartNode()
 			
 			ant.visitCity(node_start)
 			# print("Visita a cidade: {}".format(node_start))
@@ -840,6 +850,7 @@ def main():
 					edge = ( v,op,vizinho )
 					try:
 						prob_Ni.append( ant.probability[edge] )
+						print("Probabilidade existente")
 					except:
 						#Todos iniciam com a mesma probabilidade, sendo o numero de operacoes
 						ant.probability[edge] = 1.0/ant.op
