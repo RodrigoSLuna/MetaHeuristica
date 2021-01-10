@@ -1,1 +1,4 @@
 .idea/*
+*.txt
+*.csv
+testerFO.py
