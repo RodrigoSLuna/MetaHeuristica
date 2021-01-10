@@ -105,6 +105,9 @@ class State:
 							return False
 			
 		return True
+		def __gt__(self,other):
+			if(self.value > other.value ):
+				return True
 
 	def chooseOP(self,op):
 		if(op == 0):
@@ -237,6 +240,15 @@ class Cirurgia:
 			if(self.w < other.w):
 				return True
 			elif(self.tc <= other.tc):
+				return True
+		return False
+	def __lt__(self,other): 
+		if(self.p < other.p):
+			return True
+		elif(self.p == other.p):
+			if(self.w < other.w):
+				return True
+			elif(self.tc >= other.tc):
 				return True
 		return False
 
@@ -415,7 +427,7 @@ def verificaInstancia(Cirurgias):
 	return True
 #A sala tem especialidade
 def agenda(tempo,dia,semana,Cirurgias,Salas,Cirurgioes):
-	Cirurgias.sort(reverse=True)
+	
 	cnt = 0
 
 	for s in range(len(Salas)):
@@ -707,21 +719,40 @@ TODO:
 10. Alterar 46 > 48 e adicionar variáveis globais
 '''
 
+def getStartNode():
+	States = list( G.nodes.keys() )
+	States.sort(reverse=False)
+	idx = random.randint(0,min(10,len(States)-1 )) 
+	return G.nodes[States[idx]]
+
+
 
 
 def main():
 	start = time.time()
 	read_instances(Cirurgias,Salas,Cirurgioes)
+	
+	Cirurgias2 = copy.deepcopy(Cirurgias)
+	Salas2 = copy.deepcopy(Salas)
+	Cirurgioes2 = copy.deepcopy(Cirurgioes)
 	check(Cirurgias,Salas,Cirurgioes) 
+	Cirurgias.sort(reverse=True)
 	agendaGreedy(len(Salas),Cirurgias,Salas,Cirurgioes )
 	checkConstrains(Cirurgias, Salas, Cirurgioes)
 	printSolution(Cirurgias)
 	print("Funcao Objetivo: ", FO(Cirurgias))
-	
+	s1 = State(Cirurgias,FO(Cirurgias))
 	# '''
 	# 	Inicio da Heurística
 	# '''
-	s1 = State(Cirurgias,FO(Cirurgias))
+	
+	Cirurgias2.sort(reverse=False)
+	s2 = State(Cirurgias2,FO(Cirurgias2))
+	agendaGreedy(len(Salas2),Cirurgias2,Salas2,Cirurgioes2 )
+	checkConstrains(Cirurgias2, Salas2, Cirurgioes2)
+	printSolution(Cirurgias2)
+	print("Funcao Objetivo: ", FO(Cirurgias2))
+	
 	global G,feromonio
 	G = Graph()
 	

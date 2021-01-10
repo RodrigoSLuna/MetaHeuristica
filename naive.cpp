@@ -133,7 +133,7 @@ void agenda(int time){
 				int cirurgiao_selecionado = -1;
 				for(int c = 0; c<cirurgioes.size();c++ ){
 					if( cirurgioes[c].especialidade == cirurgias[ci].e  &&  cirurgioes[c].periodos_dia + cirurgias[ci].tc <= 24 && 
-					 	cirurgioes[c].periodos_semanais + cirurgias[ci].tc <= 100 && cirurgioes[c].periodo_ocupado < time ){
+					 	cirurgioes[creturn None].periodos_semanais + cirurgias[ci].tc <= 100 && cirurgioes[c].periodo_ocupado < time ){
 						cirurgiao_selecionado = cirurgioes[c].id;
 					}
 				}
