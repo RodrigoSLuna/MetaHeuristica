@@ -4,6 +4,8 @@ import copy
 import time
 
 # Variáveis globais
+from typing import List
+
 Ants = []
 Cirurgias = []
 Salas = []
@@ -116,17 +118,17 @@ class State:
         return True
 
     def __gt__(self, other):
-        if (self.value > other.value):
+        if self.value > other.value:
             return True
 
     def chooseOP(self, op):
-        if op == 0:
+        if op == 1:
             return self.op1()
-        elif op == 1:
-            return self.op2()
         elif op == 2:
-            return self.op3()
+            return self.op2()
         elif op == 3:
+            return self.op3()
+        elif op == 4:
             return self.op4()
 
     def pick_surgery_to_remove(self):
@@ -136,6 +138,7 @@ class State:
         for surgery in self.Cirurgias:
             surgeries_copy = copy.deepcopy(self.Cirurgias)
             remove_surgery_by_id(surgeries_copy, surgery.id)
+
             fo_result = FO(surgeries_copy)
             if fo_result < lowest_FO:
                 lowest_FO = fo_result
@@ -144,13 +147,34 @@ class State:
         return surgery_id
 
     def op4(self):
-        pass
+        schedulable_surgeries, tempos_d = self.look_for_schedulable_surgeries()
+        lowest_fo = 0
+        best_surgery_id = -1
+        best_surgery_final_state = copy.deepcopy(self.Cirurgias)
+
+        for surgery_id in schedulable_surgeries:
+            surgeries_copy = copy.deepcopy(self.Cirurgias)
+            for surgery in surgeries_copy:
+                if surgery.id != surgery_id:
+                    continue
+
+                for wc, _id in tempos_d.keys():
+                    if surgery.tc <= wc:
+                        d, s, w = tempos_d[(wc, _id)]
+                        surgery.add(d, s, w)
+
+                fo_result = FO(surgeries_copy)
+                if fo_result < lowest_fo:
+                    lowest_fo = fo_result
+                    best_surgery_id = surgery.id
+                    best_surgery_final_state = surgeries_copy
+
+        return State(best_surgery_final_state, FO(best_surgery_final_state)), best_surgery_id
 
     def op3(self):
-        New_Cirurgias = copy.deepcopy(self.Cirurgias)
-
         id_ = self.pick_surgery_to_remove()
         # print("Cirurgia id: {} desagendada".format(id_))
+        New_Cirurgias = copy.deepcopy(self.Cirurgias)
         remove_surgery_by_id(New_Cirurgias, id_)
 
         return State(New_Cirurgias, FO(New_Cirurgias)), id_
@@ -172,13 +196,34 @@ class State:
     # Adiciona uma cirurgia aleatória
     # Começa com um
     def op1(self):
-        # Procura os tempos em que as cirurgias podem ser adicionadas
+        pos_cirurgia, tempos_d = self.look_for_schedulable_surgeries()
 
+        # Coleto cirurgias randômicas
+        try:
+            select_id = random.choice(pos_cirurgia)
+        except:
+            select_id = -1
+        # Crio um novo estado para a cirurgia
+        New_Cirurgias = copy.deepcopy(self.Cirurgias)
+
+        # Adiciono a cirurgia no dia X,no tempo Y, com inicio TC
+        if select_id > -1:
+            for cirurgia in New_Cirurgias:
+                if (cirurgia.id == select_id):
+                    for wc, _id in tempos_d.keys():
+                        if (cirurgia.tc <= wc):
+                            d, s, w = tempos_d[(wc, _id)]
+                            cirurgia.add(d, s, w)
+
+        # print("Agendamento da cirurgia: {}".format(select_id))
+        return State(New_Cirurgias, FO(New_Cirurgias)), select_id
+
+    def look_for_schedulable_surgeries(self):
+        # Procura os tempos em que as cirurgias podem ser adicionadas
         tempos_d = {}
         dia = 1
         tc = 1
         qt_f = 1
-
         while (dia <= 5):
             while (tc <= 46):
                 for sala in Salas:
@@ -218,13 +263,11 @@ class State:
                             qt_f += 1
                 tc += 1
             dia += 1
-
         # Após ter todos os tempos disponveis, verificamos quais cirurgias podem ser agendadas
         # A restrição do problema para cirurgias que não possam ser agendadas, será penalizada na funcao FO.
         # A adição é feita no tempo correto, no entanto, para verificar se a sala/cirurgiao possam ser utilizados, será verificado em um próximo momento
         # Procuro as cirurgias que possam ser agendadas com o tempo
         # print(tempos_d)
-
         # Garantir escopo de viabiliade ( Cirurgia só é possível caso Cirurgiao e Sala possam realizá-la)
         pos_cirurgia = []
         for wc, _id in tempos_d.keys():
@@ -234,25 +277,7 @@ class State:
                     # Se o tempo para a conclusão daquela cirurgia for menor ou igual ao tempo disponível. Selecione
                     if (cirurgia.tc <= wc):
                         pos_cirurgia.append(cirurgia.id)
-
-        # Coleto cirurgias randômicas
-        try:
-            select_id = random.choice(pos_cirurgia)
-        except:
-            select_id = -1
-        # Crio um novo estado para a cirurgia
-        New_Cirurgias = copy.deepcopy(self.Cirurgias)
-
-        # Adiciono a cirurgia no dia X,no tempo Y, com inicio TC
-        for cirurgia in New_Cirurgias:
-            if (cirurgia.id == select_id):
-                for wc, _id in tempos_d.keys():
-                    if (cirurgia.tc <= wc):
-                        d, s, w = tempos_d[(wc, _id)]
-                        cirurgia.add(d, s, w)
-
-        # print("Agendamento da cirurgia: {}".format(select_id))
-        return State(New_Cirurgias, FO(New_Cirurgias)), select_id
+        return pos_cirurgia, tempos_d
 
 
 class Cirurgia:
@@ -581,7 +606,7 @@ class Ant:
         self.alfa = a
         self.beta = b
         self.n = N
-        self.op = op
+        self.op: List = op
         # Construo a funcao de probabilidade da formiga, de escolher uma operacao a ser realizada. prob[i][j][k], probabilidade de ir de i~j utilizando a operacao k
         # self.probability = [[[1.0 / float(self.op) for x in range(op)] for x in range(N)] for y in range(N)]
         self.probability = {}
@@ -592,6 +617,7 @@ class Ant:
 
         # Arestas visitadas por esta formiga, (vi,op,vj)
         self.edges = []
+
 
     def addEdge(self, edge):
         self.edges.append(edge)
@@ -635,7 +661,7 @@ class Ant:
         # Gera a vizinhança do Estado Atual
         # Crio os estados não visitados ainda.
         vizinhos = []
-        for op in range(self.op):
+        for op in self.op:
             vizinho, _id = v.chooseOP(op)
             G.addNode(vizinho)
             edge = (G.getNode(self.at), op, vizinho)
@@ -844,6 +870,7 @@ def main():
 
     max_iter = 10
     N = 1000
+    OPERATORS = [3, 4]
     alfa = 1
     beta = 1
     p = 0.5
@@ -863,7 +890,7 @@ def main():
     n_formigas = 100
 
     for i in range(n_formigas):
-        Ants.append(Ant(N, 2, alfa, beta, 1))
+        Ants.append(Ant(N, OPERATORS, alfa, beta, 1))
     f = 0
     best_visited = s1.value
     best_solution = s1.Cirurgias.copy()
@@ -898,9 +925,9 @@ def main():
                 Ni = []  # Lista de vizinhança, vai possuir uma tupla (state,prob)
                 prob_Ni = []
 
-                for op in range(ant.op):
-                    # print("Aplicando a operacao {}".format(op))
+                for op in ant.op:
                     vizinho, _id = v.chooseOP(op)
+
                     # print("Vizinho de valor: {}".format(vizinho.value))
                     if (vizinho.value >= pow(10, 9)):
                         continue
@@ -918,7 +945,7 @@ def main():
                         prob_Ni.append(ant.probability[edge])
                     except:
                         # Todos iniciam com a mesma probabilidade, sendo o numero de operacoes
-                        ant.probability[edge] = 1.0 / ant.op
+                        ant.probability[edge] = 1.0 / len(ant.op)
                         prob_Ni.append(ant.probability[edge])
 
                 if (len(Ni) == 0):
