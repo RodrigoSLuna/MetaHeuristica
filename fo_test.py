@@ -53,12 +53,13 @@ def verificaInstancia(cirurgias, salas):
 
 
 def FO(cirurgias, salas):
-    print("hey yo!")
+    # print("hey yo!")
     penalty = 0
     # Dar penalidade para instancias com restrições falhadas diferentemente?
     # if not verificaInstancia(cirurgias, salas):
     #     penalty += pow(10, 9) + 1
     for cirurgia in cirurgias:
+        copy_penalty = penalty
         vc = 0
         xcstd = 0
         zc = 0
@@ -80,8 +81,8 @@ def FO(cirurgias, salas):
 
         if cirurgia.dia != -1:
             # print("scheduled")
-            if vc == 1:
-                print("vencida")
+            # if vc == 1:
+            #     # print("vencida")
             penalty += (pow(cirurgia.w + 2 + cirurgia.dia, 2) +
                         (pow(cirurgia.w + 2 + cirurgia.dia - lp[cirurgia.dia],
                              2) * vc)
@@ -92,11 +93,13 @@ def FO(cirurgias, salas):
                 cirurgia.p] * vc * (
                             pow(cirurgia.w + 9 - lp[cirurgia.p], 2))) * zc
 
+        print(f"\t{cirurgia.id}:{penalty - copy_penalty}")
+
     return penalty
 
 
-def test_fo_toy1_urgency_delay():
-    cirurgias, salas = set_toy1_original_solution()
+def test_fo_toy1_urgency_delay(wc5=10):
+    cirurgias, salas = set_toy1_original_solution(wc5)
     cirurgias[0].sala = 1
     cirurgias[0].tc_inicio = 42
     cirurgias[0].tc_fim = 46
@@ -112,14 +115,8 @@ def test_fo_toy1_urgency_delay():
     return FO(cirurgias, salas)
 
 
-def test_fo_toy1_original():
-    cirurgias, salas = set_toy1_original_solution()
-
-    return FO(cirurgias, salas)
-
-
-def test_fo_toy1_original_changewc5():
-    cirurgias, salas = set_toy1_original_solution(20)
+def test_fo_toy1_original(wc5=10):
+    cirurgias, salas = set_toy1_original_solution(wc5)
 
     return FO(cirurgias, salas)
 
@@ -137,7 +134,7 @@ def test_fo_toy2_manysurgeons():
 
 
 def test_fo_toy2_original_manysurgeons_wc5():
-    cirurgias, salas = set_toy2_original_solution_withmanysurgeons(20)
+    cirurgias, salas = set_toy2_original_solution(20)
 
     return FO(cirurgias, salas)
 
@@ -360,36 +357,43 @@ def set_toy1_original_solution(surgery5_w=10):
     cirurgias[0].tc_fim = cirurgias[0].tc
     cirurgias[0].dia = 1
     cirurgias[0].semana = 1
+
     cirurgias[1].sala = 1
     cirurgias[1].tc_inicio = 8
     cirurgias[1].tc_fim = 20
     cirurgias[1].dia = 1
     cirurgias[1].semana = 1
+
     cirurgias[2].sala = 1
     cirurgias[2].tc_inicio = 23
     cirurgias[2].tc_fim = 30
     cirurgias[2].dia = 1
     cirurgias[2].semana = 1
+
     cirurgias[3].sala = 1
     cirurgias[3].tc_inicio = 33
     cirurgias[3].tc_fim = 43
     cirurgias[3].dia = 1
     cirurgias[3].semana = 1
+
     cirurgias[4].sala = 1
     cirurgias[4].tc_inicio = 1
     cirurgias[4].tc_fim = 10
     cirurgias[4].dia = 2
     cirurgias[4].semana = 1
+
     cirurgias[5].sala = 1
     cirurgias[5].tc_inicio = 26
     cirurgias[5].tc_fim = 39
     cirurgias[5].dia = 2
     cirurgias[5].semana = 1
+
     cirurgias[6].sala = 1
     cirurgias[6].tc_inicio = 13
     cirurgias[6].tc_fim = 23
     cirurgias[6].dia = 2
     cirurgias[6].semana = 1
+
     cirurgias[7].sala = 1
     cirurgias[7].tc_inicio = 42
     cirurgias[7].tc_fim = 46
@@ -398,13 +402,59 @@ def set_toy1_original_solution(surgery5_w=10):
     return cirurgias, salas
 
 
+def test_fo_toy4_delayc4():
+    cirurgias, salas = set_toy4_original_solution()
+
+    set_surgery_by_id(cirurgias, 0, 1, 23, 32, 4)
+    set_surgery_by_id(cirurgias, 1, 1, 35, 44, 2)
+    set_surgery_by_id(cirurgias, 2, 1, 1, 20, 3)
+    set_surgery_by_id(cirurgias, 3, 1, 1, 20, 4)
+    set_surgery_by_id(cirurgias, 4, 1, 23, 42, 1)
+    set_surgery_by_id(cirurgias, 5, 1, 1, 20, 1)
+    set_surgery_by_id(cirurgias, 6, 1, 23, 32, 3)
+    set_surgery_by_id(cirurgias, 7, 1, 35, 44, 3)
+    set_surgery_by_id(cirurgias, 8, 1, 1, 5, 2)
+    set_surgery_by_id(cirurgias, 9, 1, 8, 12, 2)
+    set_surgery_by_id(cirurgias, 10, 1, 15, 19, 2)
+    set_surgery_by_id(cirurgias, 11, 1, 22, 26, 2)
+
+    return FO(cirurgias, salas)
+
+
 if __name__ == '__main__':
-    print("I got here!")
+    test = 1
+    print(f"Test {test}")
     print(test_fo_toy1_original())
+
+    test += 1
+    print(f"Test {test}")
     print(test_fo_toy1_urgency_delay())
-    print(test_fo_toy1_original_changewc5())
+    test += 1
+
+    print(f"Test {test}")
+    print(test_fo_toy1_original(wc5=20))
+    test += 1
+
+    print(f"Test {test}")
     print(test_fo_toy2_original_2rooms())
+    test += 1
+
+    print(f"Test {test}")
     print(test_fo_toy2_manysurgeons())
+    test += 1
+
+    print(f"Test {test}")
     print(test_fo_toy2_original_manysurgeons_wc5())
+    test += 1
+
+    print(f"Test {test}")
     print(test_fo_toy4_original())
+    test += 1
+
+    print(f"Test {test}")
     print(test_fo_toy4_boosted_solution())
+    test += 1
+
+    print(f"Test {test}")
+    print(test_fo_toy4_delayc4())
+    test += 1
