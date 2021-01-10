@@ -974,5 +974,5 @@ def main():
     print(fim - start)
 
 
-
-main()
+if __name__ == '__main__':
+    main()
