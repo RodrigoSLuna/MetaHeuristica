@@ -750,8 +750,8 @@ def main():
 	
 	it = 0
 	best_formiga = None
-	max_nodes = 10 # Cada formiga irá descobrir 10 nós
-	n_formigas = 10
+	max_nodes = 3 # Cada formiga irá descobrir 10 nós
+	n_formigas = 100
 
 
 	for i in range(n_formigas):
@@ -769,9 +769,10 @@ def main():
 			ant.clear()
 			
 			#Para cada inicio, coloca uma formiga em uma cidade aleatória diferente.
-
 			#Aumentar a chance de pegar nós com baixa FO, alguns nós com baixo e outros com FO grande
+			
 			node_start = random.randint(0,len(G.nodes)-1) 
+			
 			ant.visitCity(node_start)
 			# print("Visita a cidade: {}".format(node_start))
 			visited_cnt = 1 # a cidade inicial já foi visitada.
@@ -796,13 +797,9 @@ def main():
 					# print("Vizinho de valor: {}".format(vizinho.value))
 					if(vizinho.value >= pow(10,9)):
 						continue
-					# if(vizinho == v):
-					# 	print("Vizinho igual ao vértice atual")
-					# 	continue
-					# print(vizinhançanho.value)
-					if(vizinho.value < best_visited):
-						best_visited = vizinho.value
-						best_solution = vizinho.Cirurgias.copy()
+					# if(vizinho.value < best_visited):
+					# 	best_visited = vizinho.value
+					# 	best_solution = vizinho.Cirurgias.copy()
 					G.addNode(vizinho) #Adiciono o nó ao grafo
 					G.addEdge( v,op,vizinho,   ) #Adiciono a vizinhança ao grafo
 
@@ -827,6 +824,9 @@ def main():
 				
 				estado_escolhido = G.getEdge( Ni[idx] )[2] #Escolho o estado a ser utilizado
 
+				if(estado_escolhido.value < best_visited):
+						best_visited = estado_escolhido.value
+						best_solution = estado_escolhido.Cirurgias.copy()
 				# print(" Tentou ir do vertice: {} com a operacao: {} para o vértice {}".format(v.value, G.getEdge(Ni[idx])[1] ,estado_escolhido.value ))
 				
 				if( ant.isVisited( G.nodes[estado_escolhido] ) == False ):
