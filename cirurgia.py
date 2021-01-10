@@ -82,7 +82,6 @@ class State:
     n_agendadas = []
 
     def __init__(self, Cirurgias, value):
-
         self.Cirurgias = copy.deepcopy(Cirurgias)
         for cirurgia in Cirurgias:
             if (cirurgia.dia != -1):
@@ -722,6 +721,17 @@ def printSolution(Cirurgias):
               " Especialidade: ", cirurgia.e, " sala: ", cirurgia.sala,
               " dia: ", cirurgia.dia, " Inicio ", cirurgia.tc_inicio, " Fim ",
               cirurgia.tc_fim)
+    print("Salvando solucao")
+
+    max_id = 0
+    for cirurgia in Cirurgias:
+        max_id = max(max_id, cirurgia.id)
+
+    for i in range(max_id):
+        for cirurgia in Cirurgias:
+            if (i + 1 == cirurgia.id):
+                print(cirurgia.id, ":", cirurgia.sala + 1, ":", cirurgia.dia,
+                      ":", cirurgia.tc_inicio)
 
 
 def checkConstrains(Cirurgias, Salas, Cirurgioes):
@@ -826,13 +836,13 @@ def main():
 
     # Nó inicial das formigas
     G.addNode(s1)
+    G.addNode(s2)
 
     # Inicialmente todas as formigas iniciam a sua busca no nó 0, que é o da solução gulosa
 
-    best_rota = []
     best_value = 10000000000
 
-    max_iter = 100
+    max_iter = 10
     N = 1000
     alfa = 1
     beta = 1
@@ -869,7 +879,7 @@ def main():
             # Para cada inicio, coloca uma formiga em uma cidade aleatória diferente.
             # Aumentar a chance de pegar nós com baixa FO, alguns nós com baixo e outros com FO grande
 
-            node_start = random.randint(0, len(G.nodes) - 1)
+            node_start = getStartNode()
 
             ant.visitCity(node_start)
             # print("Visita a cidade: {}".format(node_start))
@@ -898,8 +908,7 @@ def main():
                     # 	best_visited = vizinho.value
                     # 	best_solution = vizinho.Cirurgias.copy()
                     G.addNode(vizinho)  # Adiciono o nó ao grafo
-                    G.addEdge(v, op,
-                              vizinho, )  # Adiciono a vizinhança ao grafo
+                    G.addEdge(v, op, vizinho)  # Adiciono a vizinhança ao grafo
 
                     Ni.append(G.edges[(v, op, vizinho)])
 
@@ -919,6 +928,7 @@ def main():
                     idx = np.random.choice(len(Ni), 1, p=[1])[
                         0]  # Escolho qual aresta seguir.
                 else:
+
                     idx = np.random.choice(len(Ni), 1, p=prob_Ni)[
                         0]  # Escolho qual aresta seguir.
 
@@ -964,5 +974,5 @@ def main():
     print(fim - start)
 
 
-if __name__ == '__main__':
+if _name == 'main_':
     main()
