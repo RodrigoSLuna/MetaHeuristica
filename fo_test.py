@@ -53,50 +53,44 @@ def verificaInstancia(cirurgias, salas):
 
 
 def FO(cirurgias, salas):
-    # print("hey yo!")
     penalty = 0
-    # Dar penalidade para instancias com restrições falhadas diferentemente?
-    # if not verificaInstancia(cirurgias, salas):
-    #     penalty += pow(10, 9) + 1
+
     for cirurgia in cirurgias:
-        copy_penalty = penalty
+        last = penalty
         vc = 0
         xcstd = 0
         zc = 0
         p1 = 0
-        if cirurgia.dia == -1 or \
-                cirurgia.tc_inicio == -1 or \
-                cirurgia.tc_fim == -1:
+        if (
+                cirurgia.dia == -1 or cirurgia.tc_inicio == -1 or cirurgia.tc_fim == -1):
             zc = 1
         else:
             xcstd = 1
 
-        if cirurgia.dia + cirurgia.w > lp[cirurgia.p]:
+        if (cirurgia.dia + cirurgia.w >= lp[cirurgia.p] or (
+                cirurgia.dia == -1 and 7 + cirurgia.w >= lp[cirurgia.p])):
             vc = 1
 
-        if cirurgia.p == 1 and cirurgia.dia > 1:
+        if (cirurgia.p == 1 and (cirurgia.dia > 1 or cirurgia.dia == -1)):
             p1 = 1
 
-        penalty += pow(10 * (cirurgia.w + 2), cirurgia.dia) * p1
+        penalty += (pow(10 * (cirurgia.w + 2),
+                        cirurgia.dia if cirurgia.dia != -1 else 7)) * p1
 
-        if cirurgia.dia != -1:
-            # print("scheduled")
-            # if vc == 1:
-            #     # print("vencida")
-            penalty += (pow(cirurgia.w + 2 + cirurgia.dia, 2) +
-                        (pow(cirurgia.w + 2 + cirurgia.dia - lp[cirurgia.dia],
-                             2) * vc)
-                        ) * xcstd
+        # if(cirurgia.id == 1):
+        # print("VC VC VC VC VC {} dia {}".format(vc,cirurgia.dia))
+        if (cirurgia.dia != -1):
+            penalty += (pow(cirurgia.w + 2 + cirurgia.dia, 2) + pow(
+                cirurgia.w + 2 + cirurgia.dia - lp[cirurgia.p],
+                2) * vc) * xcstd
         else:
-            # print("not scheduled")
             penalty += (pow(cirurgia.w + 7, 2) * fp[cirurgia.p] + fp[
                 cirurgia.p] * vc * (
                             pow(cirurgia.w + 9 - lp[cirurgia.p], 2))) * zc
-
-        print(f"\t{cirurgia.id}:{penalty - copy_penalty}")
-
+        # print("Cirugia {} escalonada".format("nao" if cirurgia.dia == -1 else "" ))
+        # print("Cirurgia id {} igual a {}".format(cirurgia.id,penalty-last))
+        # print("\n")
     return penalty
-
 
 def test_fo_toy1_urgency_delay(wc5=10):
     cirurgias, salas = set_toy1_original_solution(wc5)

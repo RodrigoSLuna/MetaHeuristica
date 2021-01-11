@@ -162,8 +162,8 @@ class State:
         #         if surgery.id != surgery_id:
         #             continue
 
-        for surgery_id in schedulable_surgeries:
-            surgery_id, dia, sala, inicio = surgery_id
+        for schedulable_surgery in schedulable_surgeries:
+            surgery_id, dia, sala, inicio = schedulable_surgery
             surgeries_copy = copy.deepcopy(self.Cirurgias)
             for surgery in surgeries_copy:
                 if surgery.id != surgery_id:
