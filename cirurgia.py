@@ -133,9 +133,11 @@ class State:
 
     def pick_surgery_to_remove(self):
         surgery_id = None
-        lowest_FO = 0
+        lowest_FO = pow(10,14)
 
         for surgery in self.Cirurgias:
+            if(surgery.dia == -1):
+                continue
             surgeries_copy = copy.deepcopy(self.Cirurgias)
             remove_surgery_by_id(surgeries_copy, surgery.id)
 
@@ -148,35 +150,43 @@ class State:
 
     def op4(self):
         schedulable_surgeries, tempos_d = self.look_for_schedulable_surgeries()
-        lowest_fo = 0
+        
+        lowest_fo = pow(10,9)
         best_surgery_id = -1
         best_surgery_final_state = copy.deepcopy(self.Cirurgias)
+        
+        # for pos_cirugia in schedulable_surgeries:
+        #     cirurgia_id,dia,sala,inicio = pos_cirugia
+        #     surgeries_copy = copy.deepcopy(self.Cirurgias)
+        #     for surgery in surgeries_copy:
+        #         if surgery.id != surgery_id:
+        #             continue
 
         for surgery_id in schedulable_surgeries:
+            surgery_id,dia,sala,inicio = surgery_id
             surgeries_copy = copy.deepcopy(self.Cirurgias)
             for surgery in surgeries_copy:
                 if surgery.id != surgery_id:
                     continue
-
-                for wc, _id in tempos_d.keys():
-                    if surgery.tc <= wc:
-                        d, s, w = tempos_d[(wc, _id)]
-                        surgery.add(d, s, w)
-
+                surgery.add(dia, sala, inicio)
+                # print("Adicinou a cirugia {} no dia {} na sala {} com inicio em {}".format(surgery_id,dia,sala,inicio))
                 fo_result = FO(surgeries_copy)
                 if fo_result < lowest_fo:
                     lowest_fo = fo_result
                     best_surgery_id = surgery.id
                     best_surgery_final_state = surgeries_copy
 
-        return State(best_surgery_final_state, FO(best_surgery_final_state)), best_surgery_id
-
+        return State(best_surgery_final_state, lowest_fo), best_surgery_id
+        
     def op3(self):
         id_ = self.pick_surgery_to_remove()
         # print("Cirurgia id: {} desagendada".format(id_))
         New_Cirurgias = copy.deepcopy(self.Cirurgias)
         remove_surgery_by_id(New_Cirurgias, id_)
-
+        # for cirurgia in New_Cirurgias:
+        #     if(cirurgia.id == id_):
+        #         print(cirurgia.dia,cirurgia.sala,cirurgia.tc_inicio,cirurgia.tc_fim)
+        #         break
         return State(New_Cirurgias, FO(New_Cirurgias)), id_
 
     # E1 < Remove > Ex
@@ -195,9 +205,10 @@ class State:
 
     # Adiciona uma cirurgia aleatória
     # Começa com um
+
     def op1(self):
         pos_cirurgia, tempos_d = self.look_for_schedulable_surgeries()
-
+        
         # Coleto cirurgias randômicas
         try:
             select_id = random.choice(pos_cirurgia)
@@ -206,20 +217,21 @@ class State:
         # Crio um novo estado para a cirurgia
         New_Cirurgias = copy.deepcopy(self.Cirurgias)
 
+        #Verifico se pode ser adicionado essa cirurgia, caso ao contrário nao adicione.
         # Adiciono a cirurgia no dia X,no tempo Y, com inicio TC
-        if select_id > -1:
+        
+        if select_id != -1:
+            cirurgia_id,dia,sala_id,inicio = select_id
             for cirurgia in New_Cirurgias:
-                if (cirurgia.id == select_id):
-                    for wc, _id in tempos_d.keys():
-                        if (cirurgia.tc <= wc):
-                            d, s, w = tempos_d[(wc, _id)]
-                            cirurgia.add(d, s, w)
-
+                if (cirurgia.id == cirurgia_id):    
+                    cirurgia.add(dia, sala_id, inicio)
+    
         # print("Agendamento da cirurgia: {}".format(select_id))
         return State(New_Cirurgias, FO(New_Cirurgias)), select_id
 
     def look_for_schedulable_surgeries(self):
         # Procura os tempos em que as cirurgias podem ser adicionadas
+        
         tempos_d = {}
         dia = 1
         tc = 1
@@ -231,11 +243,10 @@ class State:
                     for cirurgia in self.Cirurgias:
                         # é levado em consideração a limpeza da sala.
                         # Se a cirurgia finaizou 2 tcs atrás, esse tc não é disponível, pois é da limpeza
-                        if (cirurgia.dia == dia and (
-                                cirurgia.tc_inicio == tc or cirurgia.tc_fim - 2 == tc) and cirurgia.sala == sala.id):
+                        #Se estou dentro de um intervalo, entao esse tempo é inútil
+                        if (cirurgia.dia == dia and ( cirurgia.tc_inicio <= tc and cirurgia.tc_fim + 2 >= tc) and cirurgia.sala == sala.id):
                             found = True
                             break
-
                     # caso não tenha encontrado ninguém nessa situação, é possível agendar alguem nesse tempo
                     # procura o proximo tempo fim.
                     if (found == False):
@@ -243,8 +254,7 @@ class State:
                         while (tc_fim <= 46):
                             found_end = False
                             for cirurgia in self.Cirurgias:
-                                if (
-                                        cirurgia.dia == dia and cirurgia.tc_inicio == tc_fim and cirurgia.sala == sala.id):
+                                if ( cirurgia.dia == dia and cirurgia.tc_inicio == tc_fim and cirurgia.sala == sala.id):
                                     found_end = True
                                     break
                             if (found_end):
@@ -271,12 +281,52 @@ class State:
         # Garantir escopo de viabiliade ( Cirurgia só é possível caso Cirurgiao e Sala possam realizá-la)
         pos_cirurgia = []
         for wc, _id in tempos_d.keys():
+            dia,sala_id, inicio = tempos_d[ (wc,_id) ]
             for cirurgia in self.Cirurgias:
+                teste_sala = False
+                teste_cirurgiao = False
+                
                 # Se a cirurgia não está agendada
                 if (cirurgia.dia == -1):
                     # Se o tempo para a conclusão daquela cirurgia for menor ou igual ao tempo disponível. Selecione
                     if (cirurgia.tc <= wc):
-                        pos_cirurgia.append(cirurgia.id)
+                        # print("Tentando adicionar a cirurgia id {} com a especialidade {}".format(cirurgia.id,cirurgia.e))
+                        cirurgiao_hora = 0
+                        cirurgiao_semana = 0
+                        for cirurgia_x in self.Cirurgias:
+                            #Caso a cirurgia esteja desagendada
+                            if(cirurgia_x.dia == -1):
+                                continue        
+                            
+                            #Existe alguma cirurgia escalonada nesta sala
+                            #Caso ja haja uma cirurgia nesta sala e a especialidade seja diferente, sala é inválida
+                            if(cirurgia_x.dia == dia and cirurgia_x.sala == sala_id and cirurgia_x.e != cirurgia.e ):
+                                #Cirurgia que esta tentando adicionar anqeula sala tem especialidade diferente
+                                teste_sala = True
+                            
+                            #Verifico se o meu cirurgiao esta ou nao ocupado no momento do atendimento 
+                            if(cirurgia_x.cirurgiao == cirurgia.cirurgiao):
+                                inicio_x = cirurgia_x.tc_inicio
+                                fim_x = cirurgia_x.tc_fim + 2
+
+                                fim = cirurgia.tc + inicio + 2 #Contabilizo o tempo que o cirurgiao vai precisar para poder iniciar uma outra cirurgia tb
+
+                                if( not(inicio > fim_x or fim < inicio_x) ):
+                                    teste_cirurgiao = True
+                            #Utilizam os mesmos cirurgioes
+                            if(cirurgia_x.dia == dia and cirurgia.cirurgiao == cirurgia_x.cirurgiao):
+                                cirurgiao_hora += cirurgia_x.tc_fim - cirurgia_x.tc_inicio +1 +2
+                                cirurgiao_semana += cirurgia_x.tc_fim - cirurgia_x.tc_inicio +1 +2
+                            elif(cirurgia_x.dia != dia and cirurgia.cirurgiao == cirurgia_x.cirurgiao):
+                                cirurgiao_semana += cirurgia_x.tc_fim - cirurgia_x.tc_inicio +1 +2
+                        
+                        #Possiveis ids de cirurgias que possam ser agendadas
+                        if( cirurgiao_hora + cirurgia.tc + 2 > 24 or cirurgiao_hora + cirurgia.tc + 2 > 100):
+                            teste_cirurgiao = True
+                        if(teste_sala == False and teste_cirurgiao == False):
+                            if( (cirurgia.id,dia,sala_id,inicio) not in pos_cirurgia):
+                                #Armazeno o dia, a sala e o tempo em que posso adicionar essa cirurgia
+                                pos_cirurgia.append( (cirurgia.id,dia,sala_id,inicio)   )
         return pos_cirurgia, tempos_d
 
 
@@ -296,21 +346,21 @@ class Cirurgia:
         self.semana = -1
 
     # Overloading do
-    def __gt__(self, other):
-        if (self.p < other.p):
-            return True
-        elif (self.p == other.p):
-            if (self.w < other.w):
-                return True
-            elif (self.tc <= other.tc):
-                return True
-        return False
+    # def __gt__(self, other):
+    #     if (self.p < other.p):
+    #         return True
+    #     elif (self.p == other.p):
+    #         if (self.w < other.w):
+    #             return True
+    #         elif (self.tc <= other.tc):
+    #             return True
+    #     return False
 
     def __lt__(self, other):
         if (self.p < other.p):
             return True
         elif (self.p == other.p):
-            if (self.w < other.w):
+            if (self.w > other.w):
                 return True
             elif (self.tc >= other.tc):
                 return True
@@ -323,10 +373,8 @@ class Cirurgia:
         self.tc_fim = inicio + self.tc - 1
 
     def remove(self):
-        # print("Removido cirurgia_{}".format(self.id))
         self.dia = -1
         self.sala = -1
-        self.cirurgiao = -1
         self.tc_inicio = -1
         self.tc_fim = -1
         self.semana = -1
@@ -356,14 +404,28 @@ class Cirurgiao:
         self.e = especialidade
         self.hdia = 0
         self.hsemana = 0
-
-    def utilizaCirurgiao(self, h):
+        self.inicio = -1
+        self.fim = -1
+        self.dias = {}
+    def utilizaCirurgiao(self, h,dia,inicio,fim):
         self.hdia += h
         self.hsemana += h
-
+        self.inicio = inicio
+        self.fim = fim
+        try:
+            self.dias[dia].append (self.inicio,self.fim)
+        except:
+            lst = []
+            lst.append((self.inicio,self.fim))
+            self.dias[dia] = lst
+    def desocupa(self,dia,inicio,fim):
+        self.dias[dia].remove( (inicio,fim) )
+    
     def novoDia(self):
         self.hdia = 0
         self.especialidade = -1
+        self.inicio = -1
+        self.fim = -1
 
     def novaSemana(self):
         self.hsemana = 0
@@ -374,12 +436,22 @@ class Sala:
         self.id = id
         self.disponivel = 1
         self.especialidade = -1
+        self.dias = {}
 
     # Esse é o tempo que vai estar disponível após a limpeza da sala. no tempo Disponível a sala estará liberada
     # Por isso soma-se 3 unidades, h unidades do uso, + 2 unidades para limpeza, +1 para o tempo de disponibilidade
-    def setEspecialidade(self, e):
+    def setEspecialidade(self,dia ,e,cirurgia_id):
         self.especialidade = e
+        try:
+            self.dias[dia] = (cirurgia_id,e)
+        except:
+            lst = []
+            lst.append((cirurgia_id,e))
+            self.dias[dia] = lst
 
+    def removeEspecialidade(self,dia,cirurgia_id,e):
+        self.dias[dia].remove( (cirurgia_d,e) ) 
+    
     def setHora(self, h):
         self.disponivel = h + 3
 
@@ -389,7 +461,7 @@ class Sala:
 
 
 lp = {1: 3, 2: 15, 3: 60, 4: 365}
-fp = {1: 90, 2: 20, 3: 5, 4: 1}
+fp = {1: 90, 2: 20, 3: 8, 4: 1}
 
 # Necessário checar se essa FO está CORRETA !
 # (Toy2 está com uma solução diferente Para 2 salas. Checar se a solução está CORRETA)
@@ -414,6 +486,7 @@ def FO(Cirurgias):
     penalty = 0
 
     for cirurgia in Cirurgias:
+        last = penalty
         vc = 0
         xcstd = 0
         zc = 0
@@ -424,23 +497,28 @@ def FO(Cirurgias):
         else:
             xcstd = 1
 
-        if (cirurgia.dia + cirurgia.w > lp[cirurgia.p]):
+        if (cirurgia.dia + cirurgia.w >= lp[cirurgia.p] or (cirurgia.dia == -1 and 7 + cirurgia.w >= lp[cirurgia.p] )):
             vc = 1
 
-        if (cirurgia.p == 1 and cirurgia.dia > 1):
+        if (cirurgia.p == 1 and (cirurgia.dia > 1 or cirurgia.dia == -1)):
             p1 = 1
 
-        penalty += (pow(10 * (cirurgia.w + 2), cirurgia.dia)) * p1
 
+        penalty += (pow(10 * (cirurgia.w + 2), cirurgia.dia if cirurgia.dia != -1 else 7 )) * p1
+
+        # if(cirurgia.id == 1):
+            # print("VC VC VC VC VC {} dia {}".format(vc,cirurgia.dia))
         if (cirurgia.dia != -1):
             penalty += (pow(cirurgia.w + 2 + cirurgia.dia, 2) + pow(
-                cirurgia.w + 2 + cirurgia.dia - lp[cirurgia.dia],
+                cirurgia.w + 2 + cirurgia.dia - lp[cirurgia.p],
                 2) * vc) * xcstd
         else:
             penalty += (pow(cirurgia.w + 7, 2) * fp[cirurgia.p] + fp[
                 cirurgia.p] * vc * (
                             pow(cirurgia.w + 9 - lp[cirurgia.p], 2))) * zc
-
+        # print("Cirugia {} escalonada".format("nao" if cirurgia.dia == -1 else "" ))
+        # print("Cirurgia id {} igual a {}".format(cirurgia.id,penalty-last))
+        # print("\n")
     return penalty
 
 
@@ -530,21 +608,23 @@ def agenda(tempo, dia, semana, Cirurgias, Salas, Cirurgioes):
                     for cirurgiao in Cirurgioes:
                         if (
                                 cirurgiao.id == cirurgia.cirurgiao and cirurgiao.hdia + cirurgia.tc <= 24 and cirurgiao.hsemana + cirurgia.tc <= 100):
-                            # Configuro o cirurgiao
-                            # print("Cirurgiao :{} no dia {} usou {} ".format(cirurgiao.id,dia,cirurgia.tc))
-                            cirurgiao.utilizaCirurgiao(cirurgia.tc)
+                            if( (cirurgiao.inicio == -1) or tempo > cirurgiao.fim  ):
+                                # Configuro o cirurgiao
+                                # print("Cirurgiao :{}, com tempo utilizado {} no tempo inicio {} ate o fim {} no dia {} usou {} ".format(cirurgiao.id,cirurgiao.hdia,tempo,cirurgia.tc+tempo-1,dia,cirurgia.tc))
+                                cirurgiao.utilizaCirurgiao(cirurgia.tc +2,dia ,tempo,(cirurgia.tc+tempo-1)+2 )
+                                # print("Cirurgiao :{}, com tempo utilizado {} no tempo inicio {} ate o fim {} no dia {} usou {} ".format(cirurgiao.id,cirurgiao.hdia,tempo,cirurgia.tc+tempo-1,dia,cirurgia.tc))
+                                # print("---------")
+                                # Configuro a cirurgia
+                                cirurgia.setCirurgiao(cirurgiao.id)
+                                cirurgia.setTempo(tempo, tempo + cirurgia.tc - 1)
+                                cirurgia.setDia(dia)
+                                cirurgia.setSemana(semana)
 
-                            # Configuro a cirurgia
-                            cirurgia.setCirurgiao(cirurgiao.id)
-                            cirurgia.setTempo(tempo, tempo + cirurgia.tc - 1)
-                            cirurgia.setDia(dia)
-                            cirurgia.setSemana(semana)
-
-                            # Utilizo a sala
-                            Salas[s].setEspecialidade(cirurgia.e)
-                            cirurgia.setSala(s)
-                            Salas[s].setHora(cirurgia.tc - 1 + tempo)
-                            cnt += 1
+                                # Utilizo a sala
+                                Salas[s].setEspecialidade(dia,cirurgia.e,cirurgia.id)
+                                cirurgia.setSala(s)
+                                Salas[s].setHora(cirurgia.tc - 1 + tempo)
+                                cnt += 1
     return cnt
 
 
@@ -663,6 +743,7 @@ class Ant:
         vizinhos = []
         for op in self.op:
             vizinho, _id = v.chooseOP(op)
+            # print(vizinho.value)
             G.addNode(vizinho)
             edge = (G.getNode(self.at), op, vizinho)
             G.addEdge(G.getNode(self.at), op, vizinho)
@@ -756,11 +837,10 @@ def printSolution(Cirurgias):
     for i in range(max_id):
         for cirurgia in Cirurgias:
             if (i + 1 == cirurgia.id):
-                print(cirurgia.id, ":", cirurgia.sala + 1, ":", cirurgia.dia,
-                      ":", cirurgia.tc_inicio)
+                print("{};{};{};{}".format(cirurgia.id, cirurgia.sala + 1, cirurgia.dia, cirurgia.tc_inicio))
 
 
-def checkConstrains(Cirurgias, Salas, Cirurgioes):
+def checkConstrains():
     # Verifica se não extrapola a quantidade de tempo
     return ''
 
@@ -830,6 +910,24 @@ def getStartNode():
     States.sort(reverse=False)
     idx = random.randint(0, min(10, len(States) - 1))
     return G.nodes[States[idx]]
+from functools import cmp_to_key
+def gt(a, b):
+        if (a.p < b.p):
+            return True
+        elif (a.p == b.p):
+            if (a.w < b.w):
+                return True
+            elif (a.tc <= b.tc):
+                return True
+        return False
+def make_comparator(less_than):
+    def compare(a, b):
+        if ( less_than(a,b) ):
+            return -1
+        elif(less_than(b,a)):
+            return 1
+        return 0
+    return compare
 
 
 def main():
@@ -840,23 +938,27 @@ def main():
     Salas2 = copy.deepcopy(Salas)
     Cirurgioes2 = copy.deepcopy(Cirurgioes)
     check(Cirurgias, Salas, Cirurgioes)
-    Cirurgias.sort(reverse=True)
+    Cirurgias2.sort(reverse=True)
+    printSolution(Cirurgias2)
+    
     agendaGreedy(len(Salas), Cirurgias, Salas, Cirurgioes)
-    checkConstrains(Cirurgias, Salas, Cirurgioes)
+    # checkConstrains(Cirurgias, Salas, Cirurgioes)
     printSolution(Cirurgias)
     print("Funcao Objetivo: ", FO(Cirurgias))
     s1 = State(Cirurgias, FO(Cirurgias))
+
     # '''
     # 	Inicio da Heurística
     # '''
 
     Cirurgias2.sort(reverse=False)
-    s2 = State(Cirurgias2, FO(Cirurgias2))
     agendaGreedy(len(Salas2), Cirurgias2, Salas2, Cirurgioes2)
-    checkConstrains(Cirurgias2, Salas2, Cirurgioes2)
+    # checkConstrains(Cirurgias2, Salas2, Cirurgioes2)
     printSolution(Cirurgias2)
     print("Funcao Objetivo: ", FO(Cirurgias2))
+    s2 = State(Cirurgias2, FO(Cirurgias2))
 
+    
     global G, feromonio
     G = Graph()
 
@@ -868,9 +970,9 @@ def main():
 
     best_value = 10000000000
 
-    max_iter = 10
+    max_iter = 20
     N = 1000
-    OPERATORS = [3, 4]
+    OPERATORS = [1,2,3,4]
     alfa = 1
     beta = 1
     p = 0.5
@@ -886,16 +988,18 @@ def main():
 
     it = 0
     best_formiga = None
-    max_nodes = 3  # Cada formiga irá descobrir 10 nós
-    n_formigas = 100
+    max_nodes = 5  # Cada formiga irá descobrir 10 nós
+    n_formigas = 10
 
     for i in range(n_formigas):
         Ants.append(Ant(N, OPERATORS, alfa, beta, 1))
     f = 0
-    best_visited = s1.value
+    best_visited = min(s1.value,s2.value)
+    
     best_solution = s1.Cirurgias.copy()
+    if(best_visited == s2.value):
+        best_solution = s2.Cirurgias.copy()
     while (it != max_iter):
-
         # Fazer uma mutação nas Formigas !!!
         # Armazenar nas formigas, o caminho de arestas com MENOR valor possivel
         for ant in Ants:
@@ -914,7 +1018,6 @@ def main():
             # Enquanto não visitou todos os vértices, continua visitando:
 
             while (visited_cnt != max_nodes):
-
                 # Coleto onde a formiga K está
                 # print(len(ant.visited),ant.visited[-1])
                 v = G.getNode(ant.visited[-1])
@@ -926,8 +1029,11 @@ def main():
                 prob_Ni = []
 
                 for op in ant.op:
+                    start = time.time()
                     vizinho, _id = v.chooseOP(op)
-
+                    end = time.time()
+                    print(end-start,op)
+                    # print(_id)
                     # print("Vizinho de valor: {}".format(vizinho.value))
                     if (vizinho.value >= pow(10, 9)):
                         continue
@@ -952,10 +1058,10 @@ def main():
                     break
 
                 if (sum(prob_Ni) != 1):
-                    idx = np.random.choice(len(Ni), 1, p=[1])[
+                    # print(prob_Ni)
+                    idx = np.random.choice(len(Ni), 1)[
                         0]  # Escolho qual aresta seguir.
                 else:
-
                     idx = np.random.choice(len(Ni), 1, p=prob_Ni)[
                         0]  # Escolho qual aresta seguir.
 
@@ -999,7 +1105,7 @@ def main():
     printSolution((best_solution))
     fim = time.time()
     print(fim - start)
-
+    
 
 if __name__ == '__main__':
     main()
