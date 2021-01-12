@@ -218,7 +218,6 @@ class State:
                     cirurgia.add(dia, sala_id, inicio)
 
         # print("Agendamento da cirurgia: {}".format(select_id))
-        return State(New_Cirurgias, FO(New_Cirurgias)), select_id
         return State(New_Cirurgias, copy.deepcopy(self.Salas), FO(New_Cirurgias)), select_id
 
     def look_for_schedulable_surgeries(self):
@@ -833,7 +832,6 @@ def printSolution(Cirurgias):
               cirurgia.tc_fim)
     print("Salvando solucao")
 
-
     max_id = 0
     for cirurgia in Cirurgias:
         max_id = max(max_id, cirurgia.id)
@@ -1033,7 +1031,7 @@ def run_instance(Cirurgias, Salas, Cirurgioes):
                     start = time.time()
                     vizinho, _id = v.chooseOP(op)
                     end = time.time()
-                    print(end - start, op)
+                    # print(end - start, op)
                     # print(_id)
                     # print("Vizinho de valor: {}".format(vizinho.value))
                     if (vizinho.value >= pow(10, 9)):
