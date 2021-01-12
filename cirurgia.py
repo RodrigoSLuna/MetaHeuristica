@@ -826,16 +826,13 @@ def read_instances(file, Cirurgias, Salas, Cirurgioes):
 
 
 def printSolution(Cirurgias):
-    pass
-    # print("Solucao encontrada: ")
-    pass
     for cirurgia in Cirurgias:
         print("Id: ", cirurgia.id, " Prioridade: ", cirurgia.p,
               " Especialidade: ", cirurgia.e, " sala: ", cirurgia.sala,
               " dia: ", cirurgia.dia, " Inicio ", cirurgia.tc_inicio, " Fim ",
               cirurgia.tc_fim)
     print("Salvando solucao")
-    pass
+
 
     max_id = 0
     for cirurgia in Cirurgias:
@@ -952,13 +949,13 @@ def run_instance(Cirurgias, Salas, Cirurgioes):
     check(Cirurgias, Salas, Cirurgioes)
     Cirurgias2.sort(reverse=True)
     # printSolution(Cirurgias2)
-    pass
+
     agendaGreedy(len(Salas), Cirurgias, Salas, Cirurgioes)
     # checkConstrains(Cirurgias, Salas, Cirurgioes)
     # printSolution(Cirurgias)
-    pass
+
     # print("Funcao Objetivo: ", FO(Cirurgias))
-    pass
+
     s1 = State(Cirurgias, Salas, FO(Cirurgias))
     # '''
     # 	Inicio da Heurística
@@ -967,9 +964,9 @@ def run_instance(Cirurgias, Salas, Cirurgioes):
     agendaGreedy(len(Salas2), Cirurgias2, Salas2, Cirurgioes2)
     # checkConstrains(Cirurgias2, Salas2, Cirurgioes2)
     # printSolution(Cirurgias2)
-    pass
+
     # print("Funcao Objetivo: ", FO(Cirurgias2))
-    pass
+
     s2 = State(Cirurgias2, Salas2, FO(Cirurgias2))
     global G, feromonio
     G = Graph()
@@ -1006,8 +1003,8 @@ def run_instance(Cirurgias, Salas, Cirurgioes):
         # Fazer uma mutação nas Formigas !!!
         # Armazenar nas formigas, o caminho de arestas com MENOR valor possivel
         for ant in Ants:
-            # # print("Inicio da formiga id {}".format(f%n_formigas))
-            pass
+            # print("Inicio da formiga id {}".format(f%n_formigas))
+
             f += 1
             ant.clear()
 
@@ -1089,16 +1086,14 @@ def run_instance(Cirurgias, Salas, Cirurgioes):
 
             ant.depositaFeromonio(feromonio, G)
             # Verifica se a rota utilizada pela formiga foi a melhor até o momento
-            # # print(ant.visited)
-            pass
+            # print(ant.visited)
 
             value = G.getNode(ant.visited[-1]).value
 
             if (value < best_value):
                 best_value = value
                 best_rota = ant.edges
-        # # print("Fim da formiga")
-        pass
+        # print("Fim da formiga")
         evaporaFeromonio(feromonio, p, G)
 
         # Altero a probabilidade de escolher aquela aresta.
@@ -1107,13 +1102,13 @@ def run_instance(Cirurgias, Salas, Cirurgioes):
 
         it += 1
     # print("MELHOR VALOR ENCONTRADO: {}".format(best_visited))
-    pass
+
     # printSolution(best_solution)
-    pass
+
     end = time.time()
     time_elapsed = end - start
     # print(time_elapsed)
-    pass
+
     return time_elapsed, best_visited
 
 
