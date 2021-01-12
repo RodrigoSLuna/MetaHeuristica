@@ -2,14 +2,11 @@ import numpy as np
 import random
 import copy
 import time
+import glob
 
 # Variáveis globais
 from typing import List
 
-Ants = []
-Cirurgias = []
-Salas = []
-Cirurgioes = []
 
 '''
 Classe State, indica um estado final da instância de agendamento
@@ -83,7 +80,7 @@ class State:
     id_agendadas = []
     n_agendadas = []
 
-    def __init__(self, Cirurgias, value):
+    def __init__(self, Cirurgias, Salas, value):
         self.Cirurgias = copy.deepcopy(Cirurgias)
         for cirurgia in Cirurgias:
             if (cirurgia.dia != -1):
@@ -91,6 +88,7 @@ class State:
             else:
                 self.n_agendadas.append(cirurgia.id)
         # Valor da função objetivo
+        self.Salas = Salas
         self.value = value
 
     def __hash__(self):
@@ -155,13 +153,6 @@ class State:
         best_surgery_id = -1
         best_surgery_final_state = copy.deepcopy(self.Cirurgias)
 
-        # for pos_cirugia in schedulable_surgeries:
-        #     cirurgia_id,dia,sala,inicio = pos_cirugia
-        #     surgeries_copy = copy.deepcopy(self.Cirurgias)
-        #     for surgery in surgeries_copy:
-        #         if surgery.id != surgery_id:
-        #             continue
-
         for schedulable_surgery in schedulable_surgeries:
             surgery_id, dia, sala, inicio = schedulable_surgery
             surgeries_copy = copy.deepcopy(self.Cirurgias)
@@ -176,7 +167,7 @@ class State:
                     best_surgery_id = surgery.id
                     best_surgery_final_state = surgeries_copy
 
-        return State(best_surgery_final_state, lowest_fo), best_surgery_id
+        return State(best_surgery_final_state, copy.deepcopy(self.Salas), lowest_fo), best_surgery_id
 
     def op3(self):
         id_ = self.pick_surgery_to_remove()
@@ -187,7 +178,7 @@ class State:
         #     if(cirurgia.id == id_):
         #         print(cirurgia.dia,cirurgia.sala,cirurgia.tc_inicio,cirurgia.tc_fim)
         #         break
-        return State(New_Cirurgias, FO(New_Cirurgias)), id_
+        return State(New_Cirurgias, copy.deepcopy(self.Salas), FO(New_Cirurgias)), id_
 
     # E1 < Remove > Ex
     # Esta operacao remove uma cirurgia agendada aleatoriamente, de acordo com a probabilidade de prioridade
@@ -201,7 +192,7 @@ class State:
         # print("Cirurgia id: {} desagendada".format(id_))
         remove_surgery_by_id(New_Cirurgias, id_)
 
-        return State(New_Cirurgias, FO(New_Cirurgias)), id_
+        return State(New_Cirurgias, copy.deepcopy(self.Salas), FO(New_Cirurgias)), id_
 
     # Adiciona uma cirurgia aleatória
     # Começa com um
@@ -228,6 +219,7 @@ class State:
 
         # print("Agendamento da cirurgia: {}".format(select_id))
         return State(New_Cirurgias, FO(New_Cirurgias)), select_id
+        return State(New_Cirurgias, copy.deepcopy(self.Salas), FO(New_Cirurgias)), select_id
 
     def look_for_schedulable_surgeries(self):
         # Procura os tempos em que as cirurgias podem ser adicionadas
@@ -238,7 +230,7 @@ class State:
         qt_f = 1
         while (dia <= 5):
             while (tc <= 46):
-                for sala in Salas:
+                for sala in self.Salas:
                     found = False
                     for cirurgia in self.Cirurgias:
                         # é levado em consideração a limpeza da sala.
@@ -459,7 +451,7 @@ class Sala:
             self.dias[dia] = lst
 
     def removeEspecialidade(self, dia, cirurgia_id, e):
-        self.dias[dia].remove((cirurgia_d, e))
+        self.dias[dia].remove((cirurgia_id, e))
 
     def setHora(self, h):
         self.disponivel = h + 3
@@ -540,7 +532,7 @@ TODO
 
 
 # Funcao verifica se a instancia está dentro do Bloco do Problema.
-def verificaInstancia(Cirurgias):
+def verificaInstancia(Cirurgias, Salas):
     # Verifica se todos que estão na mesma sala, possuem a mesma
     dia = 1
     while (dia <= 5):
@@ -813,36 +805,37 @@ def evaporaFeromonio(feromonio, p, graph):
             pass
 
 
-def read_instances(Cirurgias, Salas, Cirurgioes):
-    x = input()
-    n = int(x.split(" ")[0])
-    s = int(x.split(" ")[1])
-
-    for sala in range(s):
-        Salas.append(Sala((sala)))
-
+def read_instances(file, Cirurgias, Salas, Cirurgioes):
+    lines = file.readlines()
     unique_id_cir = {}
-    for i in range(n):
-        cir = input()
-        print(cir)
-        c = cir.split(" ")
-        Cirurgias.append(
-            Cirurgia(int(c[0]), int(c[1]), int(c[2]), int(c[3]), int(c[4]),
-                     int(c[5])))
-        unique_id_cir[int(c[4])] = int(c[3])
+    for line, x in enumerate(lines, 1):
+        if line == 1:
+            s = int(x.split(" ")[1])
+
+            for sala in range(s):\
+                Salas.append(Sala(sala))
+        else:
+            c = x.split(" ")
+            Cirurgias.append(
+                Cirurgia(int(c[0]), int(c[1]), int(c[2]), int(c[3]), int(c[4]),
+                         int(c[5])))
+            unique_id_cir[int(c[4])] = int(c[3])
 
     for key in unique_id_cir.keys():
         Cirurgioes.append(Cirurgiao(key, unique_id_cir[key]))
 
 
 def printSolution(Cirurgias):
-    print("Solucao encontrada: ")
+    pass
+    # print("Solucao encontrada: ")
+    pass
     for cirurgia in Cirurgias:
         print("Id: ", cirurgia.id, " Prioridade: ", cirurgia.p,
               " Especialidade: ", cirurgia.e, " sala: ", cirurgia.sala,
               " dia: ", cirurgia.dia, " Inicio ", cirurgia.tc_inicio, " Fim ",
               cirurgia.tc_fim)
     print("Salvando solucao")
+    pass
 
     max_id = 0
     for cirurgia in Cirurgias:
@@ -949,79 +942,72 @@ def make_comparator(less_than):
     return compare
 
 
-def main():
+def run_instance(Cirurgias, Salas, Cirurgioes):
     start = time.time()
-    read_instances(Cirurgias, Salas, Cirurgioes)
 
+    Ants = []
     Cirurgias2 = copy.deepcopy(Cirurgias)
     Salas2 = copy.deepcopy(Salas)
     Cirurgioes2 = copy.deepcopy(Cirurgioes)
     check(Cirurgias, Salas, Cirurgioes)
     Cirurgias2.sort(reverse=True)
-    printSolution(Cirurgias2)
-
+    # printSolution(Cirurgias2)
+    pass
     agendaGreedy(len(Salas), Cirurgias, Salas, Cirurgioes)
     # checkConstrains(Cirurgias, Salas, Cirurgioes)
-    printSolution(Cirurgias)
-    print("Funcao Objetivo: ", FO(Cirurgias))
-    s1 = State(Cirurgias, FO(Cirurgias))
-
+    # printSolution(Cirurgias)
+    pass
+    # print("Funcao Objetivo: ", FO(Cirurgias))
+    pass
+    s1 = State(Cirurgias, Salas, FO(Cirurgias))
     # '''
     # 	Inicio da Heurística
     # '''
-
     Cirurgias2.sort(reverse=False)
     agendaGreedy(len(Salas2), Cirurgias2, Salas2, Cirurgioes2)
     # checkConstrains(Cirurgias2, Salas2, Cirurgioes2)
-    printSolution(Cirurgias2)
-    print("Funcao Objetivo: ", FO(Cirurgias2))
-    s2 = State(Cirurgias2, FO(Cirurgias2))
-
+    # printSolution(Cirurgias2)
+    pass
+    # print("Funcao Objetivo: ", FO(Cirurgias2))
+    pass
+    s2 = State(Cirurgias2, Salas2, FO(Cirurgias2))
     global G, feromonio
     G = Graph()
-
     # Nó inicial das formigas
     G.addNode(s1)
     G.addNode(s2)
-
     # Inicialmente todas as formigas iniciam a sua busca no nó 0, que é o da solução gulosa
-
     best_value = 10000000000
-
     max_iter = 20
     N = 1000
     OPERATORS = [1, 2, 3, 4]
     alfa = 1
     beta = 1
     p = 0.5
-
     # graph = [[0 for x in range(N)] for y in range(N)]
     # Problema aqui, visita muitos nós e da overflow
     # feromonio = [[[1 for k in range(2)] for j in range(N)] for i in range(N)] # Feromonio[i][j][op]
-
     # Alteração do feromonio para acessar um estado com lista encadeada, entrada é a aresta, saída é o total de ferômonio depositado nesta aresta
     # Aresta será levado em consideração o Mapeamento da aresta no GRAFO
     # Inicialmente TODOS começam com a mesma quantidade de ferômonio, no momento do depósito ( caso seja a primeira vez será adicionado o valor de 1 unidade)
     feromonio = {}
-
     it = 0
     best_formiga = None
     max_nodes = 5  # Cada formiga irá descobrir 10 nós
     n_formigas = 10
-
     for i in range(n_formigas):
         Ants.append(Ant(N, OPERATORS, alfa, beta, 1))
     f = 0
     best_visited = min(s1.value, s2.value)
-
     best_solution = s1.Cirurgias.copy()
-    if (best_visited == s2.value):
+    if best_visited == s2.value:
         best_solution = s2.Cirurgias.copy()
-    while (it != max_iter):
+    while it != max_iter:
         # Fazer uma mutação nas Formigas !!!
         # Armazenar nas formigas, o caminho de arestas com MENOR valor possivel
         for ant in Ants:
-            # print("Inicio da formiga id {}".format(f%n_formigas))
+            # # print("Inicio da formiga id {}".format(f%n_formigas))
+            pass
             f += 1
             ant.clear()
 
@@ -1103,14 +1089,16 @@ def main():
 
             ant.depositaFeromonio(feromonio, G)
             # Verifica se a rota utilizada pela formiga foi a melhor até o momento
-            # print(ant.visited)
+            # # print(ant.visited)
+            pass
 
             value = G.getNode(ant.visited[-1]).value
 
             if (value < best_value):
                 best_value = value
                 best_rota = ant.edges
-        # print("Fim da formiga")
+        # # print("Fim da formiga")
+        pass
         evaporaFeromonio(feromonio, p, G)
 
         # Altero a probabilidade de escolher aquela aresta.
@@ -1118,11 +1106,44 @@ def main():
         ant.changeProbability(feromonio)
 
         it += 1
+    # print("MELHOR VALOR ENCONTRADO: {}".format(best_visited))
+    pass
+    # printSolution(best_solution)
+    pass
+    end = time.time()
+    time_elapsed = end - start
+    # print(time_elapsed)
+    pass
+    return time_elapsed, best_visited
 
-    print("MELHOR VALOR ENCONTRADO: {}".format(best_visited))
-    printSolution(best_solution)
-    fim = time.time()
-    print(fim - start)
+
+N_TIMES_EACH_INSTANCE = 5
+
+
+def main():
+    filenames = glob.glob("I*.txt")
+
+    for file in filenames:
+        print(file)
+
+        Cirurgias = []
+        Salas = []
+        Cirurgioes = []
+
+        instance_results = {}
+        with open(file, 'r') as f:
+            read_instances(f, Cirurgias, Salas, Cirurgioes)
+
+        for i in range(N_TIMES_EACH_INSTANCE):
+            instance_results[i] = run_instance(copy.deepcopy(Cirurgias), copy.deepcopy(Salas), copy.deepcopy(Cirurgioes))
+
+        # print(instance_results)
+        time_elapsed_avg = sum(map(lambda x: x[0], instance_results.values())) / len(instance_results.values())
+        min_time_elapsed = min(map(lambda x: x[0], instance_results.values()))
+        max_time_elapsed = max(map(lambda x: x[0], instance_results.values()))
+        print(f"Time elapsed avg: {time_elapsed_avg}")
+        print(f"Time elapsed min: {min_time_elapsed}")
+        print(f"Time elapsed max: {max_time_elapsed}")
 
 
 if __name__ == '__main__':
