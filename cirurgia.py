@@ -944,7 +944,7 @@ def run_instance(Cirurgias, Salas, Cirurgioes):
     Cirurgias2 = copy.deepcopy(Cirurgias)
     Salas2 = copy.deepcopy(Salas)
     Cirurgioes2 = copy.deepcopy(Cirurgioes)
-    check(Cirurgias, Salas, Cirurgioes)
+    # check(Cirurgias, Salas, Cirurgioes)
     Cirurgias2.sort(reverse=True)
     # printSolution(Cirurgias2)
 
@@ -1099,9 +1099,9 @@ def run_instance(Cirurgias, Salas, Cirurgioes):
         ant.changeProbability(feromonio)
 
         it += 1
-    # print("MELHOR VALOR ENCONTRADO: {}".format(best_visited))
+    print("MELHOR VALOR ENCONTRADO: {}".format(best_visited))
 
-    # printSolution(best_solution)
+    printSolution(best_solution)
 
     end = time.time()
     time_elapsed = end - start
@@ -1114,8 +1114,8 @@ N_TIMES_EACH_INSTANCE = 5
 
 
 def main():
-    filenames = glob.glob("I*.txt")
-
+    filenames = glob.glob("I9.txt")
+    print(f"About to get data to {len(filenames)} instances")
     for file in filenames:
         print(file)
 
@@ -1128,15 +1128,25 @@ def main():
             read_instances(f, Cirurgias, Salas, Cirurgioes)
 
         for i in range(N_TIMES_EACH_INSTANCE):
+            print(f"{i}th time")
             instance_results[i] = run_instance(copy.deepcopy(Cirurgias), copy.deepcopy(Salas), copy.deepcopy(Cirurgioes))
 
         # print(instance_results)
-        time_elapsed_avg = sum(map(lambda x: x[0], instance_results.values())) / len(instance_results.values())
+        time_elapsed_avg = sum(map(lambda x: x[0], instance_results.values())) / \
+                           len(instance_results.values())
         min_time_elapsed = min(map(lambda x: x[0], instance_results.values()))
         max_time_elapsed = max(map(lambda x: x[0], instance_results.values()))
         print(f"Time elapsed avg: {time_elapsed_avg}")
         print(f"Time elapsed min: {min_time_elapsed}")
         print(f"Time elapsed max: {max_time_elapsed}")
+
+        time_elapsed_avg = sum(map(lambda x: x[1], instance_results.values())) / \
+            len(instance_results.values())
+        min_time_elapsed = min(map(lambda x: x[1], instance_results.values()))
+        max_time_elapsed = max(map(lambda x: x[1], instance_results.values()))
+        print(f"FO avg: {time_elapsed_avg}")
+        print(f"FO min: {min_time_elapsed}")
+        print(f"FO max: {max_time_elapsed}")
 
 
 if __name__ == '__main__':
