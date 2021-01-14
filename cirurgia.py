@@ -3,6 +3,7 @@ import random
 import copy
 import time
 import glob
+import statistics as stat
 
 # Variáveis globais
 from typing import List
@@ -16,7 +17,6 @@ no mesmo instante
 
 def byTC(cirurgia):
     return cirurgia.tc
-
 
 # Grafo é direcionado
 class Graph:
@@ -358,12 +358,12 @@ class Cirurgia:
     #     return False
 
     def __lt__(self, other):
-        if (self.p < other.p):
+        if self.p < other.p:
             return True
-        elif (self.p == other.p):
-            if (self.w > other.w):
+        elif self.p == other.p:
+            if self.w > other.w:
                 return True
-            elif (self.tc >= other.tc):
+            elif self.tc >= other.tc:
                 return True
         return False
 
@@ -659,7 +659,7 @@ def agendaGreedy(s, Cirurgias, Salas, Cirurgioes):
     semana_atual = 1
     cirurgias_realizadas = 0
 
-    while (cirurgias_realizadas < len(Cirurgias)):
+    while cirurgias_realizadas < len(Cirurgias):
         cirurgias_realizadas += agenda(tempo_atual, dia_atual, semana_atual,
                                        Cirurgias, Salas, Cirurgioes)
 
@@ -948,11 +948,11 @@ def run_instance(Cirurgias, Salas, Cirurgioes, instance_fo_target=np.inf):
     start = time.time()
 
     Ants = []
-    Cirurgias2 = copy.deepcopy(Cirurgias)
-    Salas2 = copy.deepcopy(Salas)
-    Cirurgioes2 = copy.deepcopy(Cirurgioes)
+    # Cirurgias2 = copy.deepcopy(Cirurgias)
+    # Salas2 = copy.deepcopy(Salas)
+    # Cirurgioes2 = copy.deepcopy(Cirurgioes)
+    # Cirurgias2.sort(reverse=True)
     # check(Cirurgias, Salas, Cirurgioes)
-    Cirurgias2.sort(reverse=True)
     # printSolution(Cirurgias2)
 
     agendaGreedy(len(Salas), Cirurgias, Salas, Cirurgioes)
@@ -965,29 +965,31 @@ def run_instance(Cirurgias, Salas, Cirurgioes, instance_fo_target=np.inf):
     # '''
     # 	Inicio da Heurística
     # '''
-    Cirurgias2.sort(reverse=False)
-    agendaGreedy(len(Salas2), Cirurgias2, Salas2, Cirurgioes2)
+    # Cirurgias2.sort(reverse=False)
+    # agendaGreedy(len(Salas2), Cirurgias2, Salas2, Cirurgioes2)
     # checkConstrains(Cirurgias2, Salas2, Cirurgioes2)
     # printSolution(Cirurgias2)
 
     # print("Funcao Objetivo: ", FO(Cirurgias2))
 
-    s2 = State(Cirurgias2, Salas2, FO(Cirurgias2))
+    # s2 = State(Cirurgias2, Salas2, FO(Cirurgias2))
     global G, feromonio
     G = Graph()
     # Nó inicial das formigas
     G.addNode(s1)
-    G.addNode(s2)
+    # G.addNode(s2)
+
     # Inicialmente todas as formigas iniciam a sua busca no nó 0, que é o da solução gulosa
     best_value = np.inf
     max_iter = 20
+    max_iter_without_improvement = 5
     if instance_fo_target != np.inf:
         max_iter = 100
     N = 1000
     OPERATORS = [1, 2, 3, 4]
     alfa = 1
     beta = 1
-    p = .7
+    p = .5
     # graph = [[0 for x in range(N)] for y in range(N)]
     # Problema aqui, visita muitos nós e da overflow
     # feromonio = [[[1 for k in range(2)] for j in range(N)] for i in range(N)] # Feromonio[i][j][op]
@@ -996,17 +998,22 @@ def run_instance(Cirurgias, Salas, Cirurgioes, instance_fo_target=np.inf):
     # Inicialmente TODOS começam com a mesma quantidade de ferômonio, no momento do depósito ( caso seja a primeira vez será adicionado o valor de 1 unidade)
     feromonio = {}
     it = 0
+    iter_without_improvement = 0
     best_formiga = None
     max_nodes = 5  # Cada formiga irá descobrir 10 nós
     n_formigas = 10
+
     for i in range(n_formigas):
         Ants.append(Ant(N, OPERATORS, alfa, beta, 1))
 
-    best_visited = min(s1.value, s2.value)
+    # best_visited = min(s1.value, s2.value)
+    best_visited = s1.value
     best_solution = s1.Cirurgias.copy()
-    if best_visited == s2.value:
-        best_solution = s2.Cirurgias.copy()
-    while it <= max_iter or best_visited <= instance_fo_target:
+    # if best_visited == s2.value:
+    #     best_solution = s2.Cirurgias.copy()
+    while it <= max_iter or \
+            best_visited <= instance_fo_target or \
+            iter_without_improvement <= max_iter_without_improvement:
         # Fazer uma mutação nas Formigas !!!
         # Armazenar nas formigas, o caminho de arestas com MENOR valor possivel
         for ant in Ants:
@@ -1074,9 +1081,10 @@ def run_instance(Cirurgias, Salas, Cirurgioes, instance_fo_target=np.inf):
                 if estado_escolhido.value < best_visited:
                     best_visited = estado_escolhido.value
                     best_solution = estado_escolhido.Cirurgias.copy()
-                # print(" Tentou ir do vertice: {} com a operacao: {} para o vértice {}".format(v.value, G.getEdge(Ni[idx])[1] ,estado_escolhido.value ))
+                else:
+                    iter_without_improvement += 1
 
-                if ant.isVisited(G.nodes[estado_escolhido]) == False:
+                if not ant.isVisited(G.nodes[estado_escolhido]):
                     # print("Visistou o vértice com valor {}".format(estado_escolhido.value))
                     next_v = estado_escolhido
                     visited_cnt += 1
@@ -1103,6 +1111,15 @@ def run_instance(Cirurgias, Salas, Cirurgioes, instance_fo_target=np.inf):
         ant.changeProbability(feromonio)
 
         it += 1
+        
+    stop_criteria = 0
+    if it <= max_iter:
+        stop_criteria = 1
+    elif best_visited <= instance_fo_target:
+        stop_criteria = 2
+    elif iter_without_improvement <= max_iter_without_improvement:
+        stop_criteria = 3
+
     print("MELHOR VALOR ENCONTRADO: {}".format(best_visited))
 
     printSolution(best_solution)
@@ -1111,7 +1128,7 @@ def run_instance(Cirurgias, Salas, Cirurgioes, instance_fo_target=np.inf):
     time_elapsed = end - start
     # print(time_elapsed)
 
-    return time_elapsed, best_visited
+    return time_elapsed, best_visited, stop_criteria
 
 
 N_TIMES_EACH_INSTANCE = 5
@@ -1165,6 +1182,10 @@ def main():
         print(f"FO max: {max_time_elapsed}")
         print(f"FO med: {med_time_elapsed}")
         print(f"FO std: {std}")
+
+        stop_criteria_values = list(map(lambda x: x[2], instance_results.values()))
+        stop_criteria_mode = stat.mode(stop_criteria_values)
+        print(f"Stop Criteria mode: {stop_criteria_mode}")
 
 
 if __name__ == '__main__':
