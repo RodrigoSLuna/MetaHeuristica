@@ -7,7 +7,6 @@ import glob
 # Variáveis globais
 from typing import List
 
-
 '''
 Classe State, indica um estado final da instância de agendamento
 Recebe uma lista de Cirurgias, um estado é idêntico ao outro caso as cirurgias foram agendadas
@@ -167,7 +166,8 @@ class State:
                     best_surgery_id = surgery.id
                     best_surgery_final_state = surgeries_copy
 
-        return State(best_surgery_final_state, copy.deepcopy(self.Salas), lowest_fo), best_surgery_id
+        return State(best_surgery_final_state, copy.deepcopy(self.Salas),
+                     lowest_fo), best_surgery_id
 
     def op3(self):
         id_ = self.pick_surgery_to_remove()
@@ -178,7 +178,8 @@ class State:
         #     if(cirurgia.id == id_):
         #         print(cirurgia.dia,cirurgia.sala,cirurgia.tc_inicio,cirurgia.tc_fim)
         #         break
-        return State(New_Cirurgias, copy.deepcopy(self.Salas), FO(New_Cirurgias)), id_
+        return State(New_Cirurgias, copy.deepcopy(self.Salas),
+                     FO(New_Cirurgias)), id_
 
     # E1 < Remove > Ex
     # Esta operacao remove uma cirurgia agendada aleatoriamente, de acordo com a probabilidade de prioridade
@@ -192,7 +193,8 @@ class State:
         # print("Cirurgia id: {} desagendada".format(id_))
         remove_surgery_by_id(New_Cirurgias, id_)
 
-        return State(New_Cirurgias, copy.deepcopy(self.Salas), FO(New_Cirurgias)), id_
+        return State(New_Cirurgias, copy.deepcopy(self.Salas),
+                     FO(New_Cirurgias)), id_
 
     # Adiciona uma cirurgia aleatória
     # Começa com um
@@ -218,7 +220,8 @@ class State:
                     cirurgia.add(dia, sala_id, inicio)
 
         # print("Agendamento da cirurgia: {}".format(select_id))
-        return State(New_Cirurgias, copy.deepcopy(self.Salas), FO(New_Cirurgias)), select_id
+        return State(New_Cirurgias, copy.deepcopy(self.Salas),
+                     FO(New_Cirurgias)), select_id
 
     def look_for_schedulable_surgeries(self):
         # Procura os tempos em que as cirurgias podem ser adicionadas
@@ -714,7 +717,7 @@ class Ant:
         self.visited.append(i)
 
     def isVisited(self, i):
-        if (i in self.visited):
+        if i in self.visited:
             return True
         return False
 
@@ -753,7 +756,7 @@ class Ant:
             edge = (G.getNode(self.at), op, vizinho)
             G.addEdge(G.getNode(self.at), op, vizinho)
             # Se o vértice já foi visitado continua
-            if (G.nodes[vizinho] in self.visited):
+            if G.nodes[vizinho] in self.visited:
                 continue
             vizinhos.append(edge)
 
@@ -772,7 +775,7 @@ class Ant:
             s += self.probability[edge]
 
         # Atualizo a probabilidade de todo mundo viável
-        if (s != 0):
+        if s != 0:
             for edge in vizinhos:
                 self.probability[edge] = self.probability[edge] / s
 
@@ -784,7 +787,7 @@ class Ant:
             # print(E1,operacao, EX )
             value_added = e[0].value / e[2].value
             # Vao ser i,a e
-            if (e not in feromonio.keys()):
+            if e not in feromonio.keys():
                 feromonio[e] = 1 + self.Q / (
                         value_added * 1.0)  # Adiciono feromonio no caminho feromonio[i][j][op]
             else:
@@ -806,12 +809,14 @@ def evaporaFeromonio(feromonio, p, graph):
 
 def read_instances(file, Cirurgias, Salas, Cirurgioes):
     lines = file.readlines()
+    fo_target = np.inf
     unique_id_cir = {}
     for line, x in enumerate(lines, 1):
         if line == 1:
             s = int(x.split(" ")[1])
+            fo_target = int(x.split(" ")[2])
 
-            for sala in range(s):\
+            for sala in range(s):
                 Salas.append(Sala(sala))
         else:
             c = x.split(" ")
@@ -822,6 +827,8 @@ def read_instances(file, Cirurgias, Salas, Cirurgioes):
 
     for key in unique_id_cir.keys():
         Cirurgioes.append(Cirurgiao(key, unique_id_cir[key]))
+
+    return fo_target
 
 
 def printSolution(Cirurgias):
@@ -937,7 +944,7 @@ def make_comparator(less_than):
     return compare
 
 
-def run_instance(Cirurgias, Salas, Cirurgioes):
+def run_instance(Cirurgias, Salas, Cirurgioes, instance_fo_target=np.inf):
     start = time.time()
 
     Ants = []
@@ -972,13 +979,15 @@ def run_instance(Cirurgias, Salas, Cirurgioes):
     G.addNode(s1)
     G.addNode(s2)
     # Inicialmente todas as formigas iniciam a sua busca no nó 0, que é o da solução gulosa
-    best_value = 10000000000
+    best_value = np.inf
     max_iter = 20
+    if instance_fo_target != np.inf:
+        max_iter = 100
     N = 1000
     OPERATORS = [1, 2, 3, 4]
     alfa = 1
     beta = 1
-    p = 0.5
+    p = .7
     # graph = [[0 for x in range(N)] for y in range(N)]
     # Problema aqui, visita muitos nós e da overflow
     # feromonio = [[[1 for k in range(2)] for j in range(N)] for i in range(N)] # Feromonio[i][j][op]
@@ -992,18 +1001,16 @@ def run_instance(Cirurgias, Salas, Cirurgioes):
     n_formigas = 10
     for i in range(n_formigas):
         Ants.append(Ant(N, OPERATORS, alfa, beta, 1))
-    f = 0
+
     best_visited = min(s1.value, s2.value)
     best_solution = s1.Cirurgias.copy()
     if best_visited == s2.value:
         best_solution = s2.Cirurgias.copy()
-    while it != max_iter:
+    while it <= max_iter or best_visited <= instance_fo_target:
         # Fazer uma mutação nas Formigas !!!
         # Armazenar nas formigas, o caminho de arestas com MENOR valor possivel
         for ant in Ants:
             # print("Inicio da formiga id {}".format(f%n_formigas))
-
-            f += 1
             ant.clear()
 
             # Para cada inicio, coloca uma formiga em uma cidade aleatória diferente.
@@ -1016,7 +1023,7 @@ def run_instance(Cirurgias, Salas, Cirurgioes):
             visited_cnt = 1  # a cidade inicial já foi visitada.
             # Enquanto não visitou todos os vértices, continua visitando:
 
-            while (visited_cnt != max_nodes):
+            while visited_cnt != max_nodes:
                 # Coleto onde a formiga K está
                 # print(len(ant.visited),ant.visited[-1])
                 v = G.getNode(ant.visited[-1])
@@ -1028,10 +1035,7 @@ def run_instance(Cirurgias, Salas, Cirurgioes):
                 prob_Ni = []
 
                 for op in ant.op:
-                    start = time.time()
                     vizinho, _id = v.chooseOP(op)
-                    end = time.time()
-                    # print(end - start, op)
                     # print(_id)
                     # print("Vizinho de valor: {}".format(vizinho.value))
                     if (vizinho.value >= pow(10, 9)):
@@ -1053,10 +1057,10 @@ def run_instance(Cirurgias, Salas, Cirurgioes):
                         ant.probability[edge] = 1.0 / len(ant.op)
                         prob_Ni.append(ant.probability[edge])
 
-                if (len(Ni) == 0):
+                if 0 == len(Ni):
                     break
 
-                if (sum(prob_Ni) != 1):
+                if sum(prob_Ni) != 1:
                     # print(prob_Ni)
                     idx = np.random.choice(len(Ni), 1)[
                         0]  # Escolho qual aresta seguir.
@@ -1067,12 +1071,12 @@ def run_instance(Cirurgias, Salas, Cirurgioes):
                 estado_escolhido = G.getEdge(Ni[idx])[
                     2]  # Escolho o estado a ser utilizado
 
-                if (estado_escolhido.value < best_visited):
+                if estado_escolhido.value < best_visited:
                     best_visited = estado_escolhido.value
                     best_solution = estado_escolhido.Cirurgias.copy()
                 # print(" Tentou ir do vertice: {} com a operacao: {} para o vértice {}".format(v.value, G.getEdge(Ni[idx])[1] ,estado_escolhido.value ))
 
-                if (ant.isVisited(G.nodes[estado_escolhido]) == False):
+                if ant.isVisited(G.nodes[estado_escolhido]) == False:
                     # print("Visistou o vértice com valor {}".format(estado_escolhido.value))
                     next_v = estado_escolhido
                     visited_cnt += 1
@@ -1088,7 +1092,7 @@ def run_instance(Cirurgias, Salas, Cirurgioes):
 
             value = G.getNode(ant.visited[-1]).value
 
-            if (value < best_value):
+            if value < best_value:
                 best_value = value
                 best_rota = ant.edges
         # print("Fim da formiga")
@@ -1114,7 +1118,7 @@ N_TIMES_EACH_INSTANCE = 5
 
 
 def main():
-    filenames = glob.glob("I9.txt")
+    filenames = glob.glob("I*.txt")
     print(f"About to get data to {len(filenames)} instances")
     for file in filenames:
         print(file)
@@ -1125,28 +1129,42 @@ def main():
 
         instance_results = {}
         with open(file, 'r') as f:
-            read_instances(f, Cirurgias, Salas, Cirurgioes)
+            fo_target = read_instances(f, Cirurgias, Salas, Cirurgioes)
 
         for i in range(N_TIMES_EACH_INSTANCE):
             print(f"{i}th time")
-            instance_results[i] = run_instance(copy.deepcopy(Cirurgias), copy.deepcopy(Salas), copy.deepcopy(Cirurgioes))
+            instance_results[i] = run_instance(copy.deepcopy(Cirurgias),
+                                               copy.deepcopy(Salas),
+                                               copy.deepcopy(Cirurgioes),
+                                               fo_target
+                                               )
 
-        # print(instance_results)
-        time_elapsed_avg = sum(map(lambda x: x[0], instance_results.values())) / \
+        print(instance_results)
+        time_values = list(map(lambda x: x[0], instance_results.values()))
+        time_elapsed_avg = sum(time_values) / \
                            len(instance_results.values())
-        min_time_elapsed = min(map(lambda x: x[0], instance_results.values()))
-        max_time_elapsed = max(map(lambda x: x[0], instance_results.values()))
+        min_time_elapsed = min(time_values)
+        max_time_elapsed = max(time_values)
+        med_time_elapsed = np.median(time_values)
+        std = np.std(time_values)
         print(f"Time elapsed avg: {time_elapsed_avg}")
         print(f"Time elapsed min: {min_time_elapsed}")
         print(f"Time elapsed max: {max_time_elapsed}")
+        print(f"Time elapsed med: {med_time_elapsed}")
+        print(f"Time elapsed std: {std}")
 
-        time_elapsed_avg = sum(map(lambda x: x[1], instance_results.values())) / \
-            len(instance_results.values())
-        min_time_elapsed = min(map(lambda x: x[1], instance_results.values()))
-        max_time_elapsed = max(map(lambda x: x[1], instance_results.values()))
+        fo_values = list(map(lambda x: x[1], instance_results.values()))
+        time_elapsed_avg = sum(fo_values) / \
+                           len(instance_results.values())
+        min_time_elapsed = min(fo_values)
+        max_time_elapsed = max(fo_values)
+        med_time_elapsed = np.median(fo_values)
+        std = np.std(fo_values)
         print(f"FO avg: {time_elapsed_avg}")
         print(f"FO min: {min_time_elapsed}")
         print(f"FO max: {max_time_elapsed}")
+        print(f"FO med: {med_time_elapsed}")
+        print(f"FO std: {std}")
 
 
 if __name__ == '__main__':
