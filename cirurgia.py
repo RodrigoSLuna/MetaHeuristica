@@ -611,7 +611,10 @@ def agenda(tempo, dia, semana, Cirurgias, Salas, Cirurgioes):
                     # Verifico se o cirurgiao requerido para essa cirurgia pode faze-la
                     for cirurgiao in Cirurgioes:
                         if (
-                                cirurgiao.id == cirurgia.cirurgiao and cirurgiao.hdia + cirurgia.tc <= 24 and cirurgiao.hsemana + cirurgia.tc <= 100):
+                                cirurgiao.id == cirurgia.cirurgiao and 
+                                cirurgiao.hdia + cirurgia.tc <= 24 and 
+                                cirurgiao.hsemana + cirurgia.tc <= 100
+                                ):
                             if ((
                                     cirurgiao.inicio == -1) or tempo > cirurgiao.fim):
                                 # Configuro o cirurgiao
@@ -814,7 +817,7 @@ def read_instances(file, Cirurgias, Salas, Cirurgioes):
     for line, x in enumerate(lines, 1):
         if line == 1:
             s = int(x.split(" ")[1])
-            fo_target = int(x.split(" ")[2])
+            # fo_target = int(x.split(" ")[2])
 
             for sala in range(s):
                 Salas.append(Sala(sala))
@@ -982,9 +985,10 @@ def run_instance(Cirurgias, Salas, Cirurgioes, instance_fo_target=np.inf):
     # Inicialmente todas as formigas iniciam a sua busca no nó 0, que é o da solução gulosa
     best_value = np.inf
     max_iter = 20
-    max_iter_without_improvement = 5
     if instance_fo_target != np.inf:
         max_iter = 100
+    # print(f"max_iter will be:{max_iter}")
+    max_iter_without_improvement = 10
     N = 1000
     OPERATORS = [1, 2, 3, 4]
     alfa = 1
@@ -999,7 +1003,6 @@ def run_instance(Cirurgias, Salas, Cirurgioes, instance_fo_target=np.inf):
     feromonio = {}
     it = 0
     iter_without_improvement = 0
-    best_formiga = None
     max_nodes = 5  # Cada formiga irá descobrir 10 nós
     n_formigas = 10
 
@@ -1008,12 +1011,15 @@ def run_instance(Cirurgias, Salas, Cirurgioes, instance_fo_target=np.inf):
 
     # best_visited = min(s1.value, s2.value)
     best_visited = s1.value
+    previous_best_visited = s1.value
     best_solution = s1.Cirurgias.copy()
     # if best_visited == s2.value:
     #     best_solution = s2.Cirurgias.copy()
-    while it <= max_iter or \
-            best_visited <= instance_fo_target or \
-            iter_without_improvement <= max_iter_without_improvement:
+    while (it <= max_iter and
+            best_visited <= instance_fo_target and
+            iter_without_improvement <= max_iter_without_improvement):
+        # print(f"it:{it}")
+        # print(f"iter_without_improvement:{iter_without_improvement}")
         # Fazer uma mutação nas Formigas !!!
         # Armazenar nas formigas, o caminho de arestas com MENOR valor possivel
         for ant in Ants:
@@ -1081,8 +1087,6 @@ def run_instance(Cirurgias, Salas, Cirurgioes, instance_fo_target=np.inf):
                 if estado_escolhido.value < best_visited:
                     best_visited = estado_escolhido.value
                     best_solution = estado_escolhido.Cirurgias.copy()
-                else:
-                    iter_without_improvement += 1
 
                 if not ant.isVisited(G.nodes[estado_escolhido]):
                     # print("Visistou o vértice com valor {}".format(estado_escolhido.value))
@@ -1103,6 +1107,7 @@ def run_instance(Cirurgias, Salas, Cirurgioes, instance_fo_target=np.inf):
             if value < best_value:
                 best_value = value
                 best_rota = ant.edges
+                
         # print("Fim da formiga")
         evaporaFeromonio(feromonio, p, G)
 
@@ -1111,18 +1116,23 @@ def run_instance(Cirurgias, Salas, Cirurgioes, instance_fo_target=np.inf):
         ant.changeProbability(feromonio)
 
         it += 1
+        if best_visited < previous_best_visited:
+            previous_best_visited = best_visited
+            iter_without_improvement = 0
+        elif best_visited == previous_best_visited:
+            iter_without_improvement += 1
         
     stop_criteria = 0
-    if it <= max_iter:
+    if it >= max_iter:
         stop_criteria = 1
-    elif best_visited <= instance_fo_target:
+    elif best_value >= instance_fo_target:
         stop_criteria = 2
-    elif iter_without_improvement <= max_iter_without_improvement:
+    elif iter_without_improvement >= max_iter_without_improvement:
         stop_criteria = 3
-
+    # print(f"stop_criteria {stop_criteria}")
     print("MELHOR VALOR ENCONTRADO: {}".format(best_visited))
 
-    printSolution(best_solution)
+    # printSolution(best_solution)
 
     end = time.time()
     time_elapsed = end - start
@@ -1149,7 +1159,7 @@ def main():
             fo_target = read_instances(f, Cirurgias, Salas, Cirurgioes)
 
         for i in range(N_TIMES_EACH_INSTANCE):
-            print(f"{i}th time")
+            print(f"{i+1}th time running {file} instance")
             instance_results[i] = run_instance(copy.deepcopy(Cirurgias),
                                                copy.deepcopy(Salas),
                                                copy.deepcopy(Cirurgioes),
