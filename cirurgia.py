@@ -3,6 +3,7 @@ import random
 import copy
 import time
 import glob
+import os
 import statistics as stat
 
 # Variáveis globais
@@ -817,7 +818,7 @@ def read_instances(file, Cirurgias, Salas, Cirurgioes):
     for line, x in enumerate(lines, 1):
         if line == 1:
             s = int(x.split(" ")[1])
-            # fo_target = int(x.split(" ")[2])
+            fo_target = float(x.split(" ")[2])
 
             for sala in range(s):
                 Salas.append(Sala(sala))
@@ -958,6 +959,8 @@ def run_instance(Cirurgias, Salas, Cirurgioes, instance_fo_target=np.inf):
     # check(Cirurgias, Salas, Cirurgioes)
     # printSolution(Cirurgias2)
 
+
+    Cirurgias.sort(reverse=False)
     agendaGreedy(len(Salas), Cirurgias, Salas, Cirurgioes)
     # checkConstrains(Cirurgias, Salas, Cirurgioes)
     # printSolution(Cirurgias)
@@ -974,7 +977,7 @@ def run_instance(Cirurgias, Salas, Cirurgioes, instance_fo_target=np.inf):
     # printSolution(Cirurgias2)
 
     # print("Funcao Objetivo: ", FO(Cirurgias2))
-
+ 
     # s2 = State(Cirurgias2, Salas2, FO(Cirurgias2))
     global G, feromonio
     G = Graph()
@@ -1141,7 +1144,7 @@ def run_instance(Cirurgias, Salas, Cirurgioes, instance_fo_target=np.inf):
     return time_elapsed, best_visited, stop_criteria
 
 
-N_TIMES_EACH_INSTANCE = 5
+N_TIMES_EACH_INSTANCE = 50
 
 
 def main():
@@ -1196,6 +1199,12 @@ def main():
         stop_criteria_values = list(map(lambda x: x[2], instance_results.values()))
         stop_criteria_mode = stat.mode(stop_criteria_values)
         print(f"Stop Criteria mode: {stop_criteria_mode}")
+
+        time_filename = f"C:\\Users\\vilma\Documents\personal\mestrado\MHOC\{file[:-4]}_time_to_fo_avg_s2_initial_state.txt"
+        with open(time_filename, 'a') as time_file: 
+            for time_elapsed, _, _ in instance_results.values():
+                time_file.write(f"{time_elapsed}\n")
+
 
 
 if __name__ == '__main__':
