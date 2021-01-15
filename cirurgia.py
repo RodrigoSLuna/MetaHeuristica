@@ -960,7 +960,7 @@ def run_instance(Cirurgias, Salas, Cirurgioes, instance_fo_target=np.inf):
     # printSolution(Cirurgias2)
 
 
-    Cirurgias.sort(reverse=False)
+    Cirurgias.sort(reverse=False) # uncomment this line to activate initial state 2 (s2)
     agendaGreedy(len(Salas), Cirurgias, Salas, Cirurgioes)
     # checkConstrains(Cirurgias, Salas, Cirurgioes)
     # printSolution(Cirurgias)
@@ -988,10 +988,12 @@ def run_instance(Cirurgias, Salas, Cirurgioes, instance_fo_target=np.inf):
     # Inicialmente todas as formigas iniciam a sua busca no nó 0, que é o da solução gulosa
     best_value = np.inf
     max_iter = 20
+    max_iter_without_improvement = 10
     if instance_fo_target != np.inf:
         max_iter = 100
-    # print(f"max_iter will be:{max_iter}")
-    max_iter_without_improvement = 10
+        max_iter_without_improvement = 50
+    print(f"\tmax_iter will be:{max_iter}")
+    
     N = 1000
     OPERATORS = [1, 2, 3, 4]
     alfa = 1
@@ -1018,9 +1020,12 @@ def run_instance(Cirurgias, Salas, Cirurgioes, instance_fo_target=np.inf):
     best_solution = s1.Cirurgias.copy()
     # if best_visited == s2.value:
     #     best_solution = s2.Cirurgias.copy()
+    print(f"\tbest_visited starts with: {best_visited}")
+    print(f"\tfo_target will be: {instance_fo_target}")
     while (it <= max_iter and
-            best_visited <= instance_fo_target and
+            best_visited > instance_fo_target and
             iter_without_improvement <= max_iter_without_improvement):
+        # print(f"reason 2? {best_visited >= instance_fo_target}")
         # print(f"it:{it}")
         # print(f"iter_without_improvement:{iter_without_improvement}")
         # Fazer uma mutação nas Formigas !!!
@@ -1128,7 +1133,7 @@ def run_instance(Cirurgias, Salas, Cirurgioes, instance_fo_target=np.inf):
     stop_criteria = 0
     if it >= max_iter:
         stop_criteria = 1
-    elif best_value >= instance_fo_target:
+    elif best_visited <= instance_fo_target:
         stop_criteria = 2
     elif iter_without_improvement >= max_iter_without_improvement:
         stop_criteria = 3
@@ -1141,14 +1146,14 @@ def run_instance(Cirurgias, Salas, Cirurgioes, instance_fo_target=np.inf):
     time_elapsed = end - start
     # print(time_elapsed)
 
-    return time_elapsed, best_visited, stop_criteria
+    return time_elapsed, best_visited, stop_criteria, it
 
 
 N_TIMES_EACH_INSTANCE = 50
 
 
 def main():
-    filenames = glob.glob("I*.txt")
+    filenames = glob.glob("I*_s2.txt")
     print(f"About to get data to {len(filenames)} instances")
     for file in filenames:
         print(file)
@@ -1200,9 +1205,9 @@ def main():
         stop_criteria_mode = stat.mode(stop_criteria_values)
         print(f"Stop Criteria mode: {stop_criteria_mode}")
 
-        time_filename = f"C:\\Users\\vilma\Documents\personal\mestrado\MHOC\{file[:-4]}_time_to_fo_avg_s2_initial_state.txt"
+        time_filename = f"C:\\Users\\vilma\Documents\personal\mestrado\MHOC\{file[:-4]}_time_to_fo_avg.txt"
         with open(time_filename, 'a') as time_file: 
-            for time_elapsed, _, _ in instance_results.values():
+            for time_elapsed, _, _, _ in instance_results.values():
                 time_file.write(f"{time_elapsed}\n")
 
 
