@@ -813,12 +813,15 @@ def evaporaFeromonio(feromonio, p, graph):
 
 def read_instances(file, Cirurgias, Salas, Cirurgioes):
     lines = file.readlines()
-    fo_target = np.inf
     unique_id_cir = {}
+
     for line, x in enumerate(lines, 1):
         if line == 1:
             s = int(x.split(" ")[1])
-            fo_target = float(x.split(" ")[2])
+            try:
+                fo_target = float(x.split(" ")[2])
+            except:
+                fo_target = np.inf
 
             for sala in range(s):
                 Salas.append(Sala(sala))
@@ -841,7 +844,8 @@ def printSolution(Cirurgias):
               " Especialidade: ", cirurgia.e, " sala: ", cirurgia.sala,
               " dia: ", cirurgia.dia, " Inicio ", cirurgia.tc_inicio, " Fim ",
               cirurgia.tc_fim)
-    print("Salvando solucao")
+
+    print("Solução em formato geral usado pela turma")
 
     max_id = 0
     for cirurgia in Cirurgias:
@@ -948,7 +952,7 @@ def make_comparator(less_than):
     return compare
 
 
-def run_instance(Cirurgias, Salas, Cirurgioes, instance_fo_target=np.inf):
+def run_instance(Cirurgias, Salas, Cirurgioes, algorithm_version, wanna_see_solution=False, instance_fo_target=np.inf):
     start = time.time()
 
     Ants = []
@@ -959,8 +963,8 @@ def run_instance(Cirurgias, Salas, Cirurgioes, instance_fo_target=np.inf):
     # check(Cirurgias, Salas, Cirurgioes)
     # printSolution(Cirurgias2)
 
-
-    Cirurgias.sort(reverse=False) # uncomment this line to activate initial state 2 (s2)
+    if algorithm_version == 2:
+        Cirurgias.sort(reverse=False) # uncomment this line to activate initial state 2 (s2)
     agendaGreedy(len(Salas), Cirurgias, Salas, Cirurgioes)
     # checkConstrains(Cirurgias, Salas, Cirurgioes)
     # printSolution(Cirurgias)
@@ -992,7 +996,7 @@ def run_instance(Cirurgias, Salas, Cirurgioes, instance_fo_target=np.inf):
     if instance_fo_target != np.inf:
         max_iter = 100
         max_iter_without_improvement = 50
-    print(f"\tmax_iter will be:{max_iter}")
+    print(f"\tmax_iter será {max_iter}")
     
     N = 1000
     OPERATORS = [1, 2, 3, 4]
@@ -1020,8 +1024,8 @@ def run_instance(Cirurgias, Salas, Cirurgioes, instance_fo_target=np.inf):
     best_solution = s1.Cirurgias.copy()
     # if best_visited == s2.value:
     #     best_solution = s2.Cirurgias.copy()
-    print(f"\tbest_visited starts with: {best_visited}")
-    print(f"\tfo_target will be: {instance_fo_target}")
+    print(f"\tbest_visited começará com {best_visited}")
+    print(f"\tfo_target começará com {instance_fo_target}")
     while (it <= max_iter and
             best_visited > instance_fo_target and
             iter_without_improvement <= max_iter_without_improvement):
@@ -1129,7 +1133,10 @@ def run_instance(Cirurgias, Salas, Cirurgioes, instance_fo_target=np.inf):
             iter_without_improvement = 0
         elif best_visited == previous_best_visited:
             iter_without_improvement += 1
-        
+
+    end = time.time()
+    time_elapsed = end - start
+
     stop_criteria = 0
     if it >= max_iter:
         stop_criteria = 1
@@ -1137,24 +1144,55 @@ def run_instance(Cirurgias, Salas, Cirurgioes, instance_fo_target=np.inf):
         stop_criteria = 2
     elif iter_without_improvement >= max_iter_without_improvement:
         stop_criteria = 3
-    # print(f"stop_criteria {stop_criteria}")
+    
+    print(f"Quantidade de Iterações: {it}")
+    print(f"Critério de Parada: {stop_criteria}")
+    print(f"Tempo Decorrido: {time_elapsed}s")
     print("MELHOR VALOR ENCONTRADO: {}".format(best_visited))
 
-    # printSolution(best_solution)
-
-    end = time.time()
-    time_elapsed = end - start
-    # print(time_elapsed)
+    if wanna_see_solution:
+        printSolution(best_solution)
 
     return time_elapsed, best_visited, stop_criteria, it
 
 
-N_TIMES_EACH_INSTANCE = 50
+N_TIMES_EACH_INSTANCE = 30
 
 
 def main():
-    filenames = glob.glob("I*_s2.txt")
-    print(f"About to get data to {len(filenames)} instances")
+    print("Que versão deste algoritmo você gostaria de rodar? (1 ou 2)")
+    algorithm_version = input()
+    try:
+        while not int(algorithm_version) in [1,2]:
+            print("Essa versão não está disponível. Tente de novo.")
+            algorithm_version = input()
+    except ValueError:
+        print("Desculpe, versões estão definidas como tipo inteiro. Comece de novo.")
+        return  
+
+    print("Quantas vezes gostaria de executar cada instância?")
+    N_TIMES_EACH_INSTANCE = input()
+    try:
+        N_TIMES_EACH_INSTANCE= int(N_TIMES_EACH_INSTANCE)
+    except ValueError:
+        print("Desculpe, essa quantidade é definida como tipo inteiro. Comece de novo.")
+        return 
+
+    print("Gostaria de ver a melhor solução encontrada por execução?(s ou n)")
+    wanna_see_solution = input() 
+    try:
+        wanna_see_solution = True if wanna_see_solution.lower() == 's' else False
+    except:
+        print("Procure colocar s ou n, por favor. Comece de novo.")
+        return
+
+    try:
+        filenames = glob.glob("I*.txt")
+        print(f"Vamos analisar {len(filenames)} instância(s) rodando {N_TIMES_EACH_INSTANCE} vezes cada uma")
+    except:
+        print("Lembre-se de ter arquivos com nome no formato I*.txt representando as instâncias. Comece de novo.")
+        return
+    
     for file in filenames:
         print(file)
 
@@ -1167,14 +1205,15 @@ def main():
             fo_target = read_instances(f, Cirurgias, Salas, Cirurgioes)
 
         for i in range(N_TIMES_EACH_INSTANCE):
-            print(f"{i+1}th time running {file} instance")
+            print(f"{i+1}a vez rodando {file[:-4]} com versão E{algorithm_version}")
             instance_results[i] = run_instance(copy.deepcopy(Cirurgias),
                                                copy.deepcopy(Salas),
                                                copy.deepcopy(Cirurgioes),
+                                               algorithm_version,
+                                               wanna_see_solution,
                                                fo_target
                                                )
 
-        print(instance_results)
         time_values = list(map(lambda x: x[0], instance_results.values()))
         time_elapsed_avg = sum(time_values) / \
                            len(instance_results.values())
@@ -1182,11 +1221,11 @@ def main():
         max_time_elapsed = max(time_values)
         med_time_elapsed = np.median(time_values)
         std = np.std(time_values)
-        print(f"Time elapsed avg: {time_elapsed_avg}")
-        print(f"Time elapsed min: {min_time_elapsed}")
-        print(f"Time elapsed max: {max_time_elapsed}")
-        print(f"Time elapsed med: {med_time_elapsed}")
-        print(f"Time elapsed std: {std}")
+        print(f"Tempo decorrido avg: {time_elapsed_avg}")
+        print(f"Tempo decorrido min: {min_time_elapsed}")
+        print(f"Tempo decorrido max: {max_time_elapsed}")
+        print(f"Tempo decorrido med: {med_time_elapsed}")
+        print(f"Tempo decorrido std: {std}")
 
         fo_values = list(map(lambda x: x[1], instance_results.values()))
         time_elapsed_avg = sum(fo_values) / \
@@ -1203,9 +1242,9 @@ def main():
 
         stop_criteria_values = list(map(lambda x: x[2], instance_results.values()))
         stop_criteria_mode = stat.mode(stop_criteria_values)
-        print(f"Stop Criteria mode: {stop_criteria_mode}")
+        print(f"Critério de Parada moda: {stop_criteria_mode}")
 
-        time_filename = f"C:\\Users\\vilma\Documents\personal\mestrado\MHOC\{file[:-4]}_time_to_fo_avg.txt"
+        time_filename = f"{file[:-4]}_e{algorithm_version}_tempo_fo_alvo.txt"
         with open(time_filename, 'a') as time_file: 
             for time_elapsed, _, _, _ in instance_results.values():
                 time_file.write(f"{time_elapsed}\n")
